@@ -41,13 +41,33 @@ Type :help for more information.
 scala> import org.trueno.elasticsearch.spark.connector._
 import org.trueno.elasticsearch.spark.connector._
 
-scala> val t = new ESTransportClient()
-t: org.trueno.elasticsearch.spark.connector.ESTransportClient = org.trueno.elasticsearch.spark.connector.ESTransportClient@31b7112d
+scala> val transportClient = new ESTransportClient()
+transportClient: org.trueno.elasticsearch.spark.connector.ESTransportClient = org.trueno.elasticsearch.spark.connector.ESTransportClient@31b7112d
 
-scala> val verticesRDD = t.getVertexRDD()
-Elastic Search Client ... 
-Scroll time [12981]
-Total hits  [327643]
-avg: 25240.197211308834
-verticesRDD: Unit = ()
+scala> val verticesRDD = transportClient.getVertexRDD()
+Elasticsearch client retrieving vertices ... 
+```
+
+## Example library
+
+```scala
+/* Trueno ES Spark Connector */
+import org.trueno.elasticsearch.spark.connector._
+
+/* GraphX references */
+import org.apache.spark.graphx._
+import org.apache.spark.graphx.lib._
+import org.apache.spark.graphx.VertexRDD
+import org.apache.spark.rdd.RDD
+
+val transportClient = new ESTransportClient()
+
+val verticesRDD = transportClient.getVertexRDD()
+
+val edgesRDD = transportClient.getEdgeRDD()
+
+val graph = transportClient.getGraph()
+
+val g2 = PageRank.runUntilConvergence(graph,0.001)
+
 ```
