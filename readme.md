@@ -3,7 +3,7 @@
 Trueno's ElasticSearch Connector for [Apache Spark](#apache-spark).
 
 ## Requirements
-Elasticsearch 2.x cluster accessible through [transport][].
+Elasticsearch 2.x cluster accessible through [transport].
 
 ## Installation
 
@@ -48,7 +48,7 @@ scala> val verticesRDD = transportClient.getVertexRDD()
 Elasticsearch client retrieving vertices ... 
 ```
 
-## Example library
+## API Example
 
 ```scala
 /* Trueno ES Spark Connector */
