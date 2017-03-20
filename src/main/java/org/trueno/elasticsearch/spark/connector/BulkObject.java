@@ -12,6 +12,9 @@
  * file 'LICENSE.txt', which is part of this source code package.
  * Do NOT forget to reference the ORIGINAL author of the code.
  */
+
+package org.trueno.elasticsearch.spark.connector;
+
 public class BulkObject {
 
     private String index;
