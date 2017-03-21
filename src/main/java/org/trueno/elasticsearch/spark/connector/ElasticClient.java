@@ -36,6 +36,7 @@ import org.elasticsearch.search.sort.SortParseElement;
 /* spark dependencies */
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.rdd.RDD;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -190,6 +191,7 @@ public class ElasticClient {
         }
     }//bulk
 
+    /* Get an specific valut from object */
     private Long getFromSource(Object objSource, String strField){
 
         HashMap hashMap = (HashMap) objSource;
@@ -240,14 +242,66 @@ public class ElasticClient {
 
             for (SearchHit hit : scrollResp.getHits().getHits()) {
                 //hit returned
+//                if(boolJustOnce) {
+//                    boolJustOnce = false;
+//                    System.out.println(hit.getSource());
+//                }
+
+                Long lngId = getFromSource(hit.getSource(), strId);
+                if (lngId != null) {
+                    sparkSources.add(ImmutableMap.of(strId, lngId));
+                }
+
+            }//for
+
+            scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(tvScrollTime).execute().actionGet();
+
+            //Break condition: No hits are returned
+            if (scrollResp.getHits().getHits().length == 0) {
+                return sparkSources;//.toArray(new Map[sparkSources.size()]);
+            }
+        }//while
+
+    }//scroll
+
+    /**
+     * The Scroll API allows you to execute a search query and get back search hits that match the query.
+     * The query can either be provided using a simple query string as a parameter, or using a request body
+     * @param data -> SearchObject
+     * @return results -> ArrayList
+     */
+    public ArrayList<Map<Long,Long>> rddEdgeScroll(SearchObject data) {
+
+        TimeValue tvScrollTime  = new TimeValue(this.scrollTimeOut);
+
+        boolean boolJustOnce = true;
+
+        /* collect results in array */
+        ArrayList<Map<Long,Long>> sparkSources = new ArrayList<>();
+
+        // .setFetchSource(new String[]{strFields}, null)
+        SearchResponse scrollResp = this.client.prepareSearch(data.getIndex())
+                .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
+                .setScroll(tvScrollTime)
+                .setFetchSource(new String[]{strEdgeSource,strEdgeTarget}, null)
+                .setQuery(data.getQuery())
+                .setSize(this.hitsPerShard).execute().actionGet(); //n hits per shard will be returned for each scroll
+
+        //Scroll until no hits are returned
+        while (true) {
+
+            for (SearchHit hit : scrollResp.getHits().getHits()) {
+                //hit returned
                 if(boolJustOnce) {
                     boolJustOnce = false;
                     System.out.println(hit.getSource());
                 }
 
-                Long lngId = getFromSource(hit.getSource(), strId);
-                if (lngId != null) {
-                    sparkSources.add(ImmutableMap.of(strId, lngId));
+                Long lngSource = getFromSource(hit.getSource(), strEdgeSource);
+                Long lngTarget = getFromSource(hit.getSource(), strEdgeTarget);
+
+                if (lngSource != null && lngTarget != null) {
+                    sparkSources.add(ImmutableMap.of(lngSource, lngTarget));
                 }
 
             }//for
@@ -273,9 +327,6 @@ public class ElasticClient {
 
         /* collecting results */
         TimeValue tvScrollTime  = new TimeValue(this.scrollTimeOut);
-
-        /* collect results in array */
-        //ArrayList<Map<String,Object>> alSources = new ArrayList<>();
 
         //.addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
         ListenableActionFuture<SearchResponse> scrollResponse = this.client.prepareSearch(data.getIndex())

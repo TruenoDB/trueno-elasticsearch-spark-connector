@@ -15,9 +15,11 @@
 
 package org.trueno.elasticsearch.spark.connector;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.elasticsearch.index.query.QueryBuilder;
 
+import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.Map;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -27,20 +29,25 @@ import org.elasticsearch.search.SearchHit;
 
 /* Spark */
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.api.java.function.Function;
 import org.apache.spark.*;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.graphx.Edge;
 import org.apache.spark.graphx.Graph;
 
+
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import scala.collection.JavaConverters.*;
 
 import com.google.common.collect.ImmutableMap;
 
-public class ESTransportClient {
+public class ESTransportClient{
 
     private static String hostname = "localhost";
     private static String index = "biogrid";
@@ -49,10 +56,20 @@ public class ESTransportClient {
     private static Integer indexSize = 6000;
     private final String strSource = "_source";
     private final int scrollTimeOut = 60000;
+    private final String strClusterName = "trueno";
+    private ElasticClient client;
 
     public ESTransportClient(String strIndex) {
+
         index = strIndex;
-    }
+
+        /* Instantiate the ElasticSearch client and connect to Server */
+        client = new ElasticClient(strClusterName, hostname);
+        client.connect();
+
+        System.out.println("Connected to the Elastic Search Client ... ");
+
+    }//Constructor
 
     /* indexCall */
     private static ArrayList<Map<String,Long>> indexCall(ElasticClient client, String strIndexType) {
@@ -133,67 +150,75 @@ public class ESTransportClient {
     }//main
 
     /* getVertexRDD */
-    public ArrayList<Map<String,Long>> getVertexRDD() {
+    //public ArrayList<Map<String,Long>> getVertexRDD() {
+    public JavaRDD<Map<String,Long>> getVertexRDD(JavaSparkContext sc) {
 
-        System.out.println("Connected to the Elastic Search Client ... ");
         System.out.println("Retrieving vertices ... ");
-
-        ElasticClient client;
-
-        /* Instantiate the ElasticSearch client and connect to Server */
-        client = new ElasticClient("trueno", hostname);
-        client.connect();
 
         ArrayList<Map<String,Long>> results = indexCall(client, indexTypeVertex);
 
-        System.out.println("Retrieved Vertices: " + results.size());
+        System.out.println("Retrieved Vertices: [" + results.size() + "]");
 
-        return results;
+        JavaRDD<Map<String,Long>> rddResults = sc.parallelize(results);
+
+        return rddResults;
 
     }//getVertexRDD
 
     /* getEdgeRDD */
-    public ArrayList<Map<String,Long>> getEdgeRDD() {
+    //public ArrayList<Map<String,Long>> getEdgeRDD() {
+    public JavaRDD<Map<Long,Long>> getEdgeRDD(JavaSparkContext sc) {
 
-        System.out.println("Elastic Search Client ... ");
+        System.out.println("Retrieving edges ... ");
 
-        ElasticClient client;
+        QueryBuilder qbMatchAll = matchAllQuery();
 
-        /* Instantiate the ElasticSearch client and connect to Server */
-        client = new ElasticClient("trueno", hostname);
-        client.connect();
+        /* prepare search object */
+        SearchObject objSearch = new SearchObject();
+                                    objSearch.setIndex(index);
+                                    objSearch.setType(indexTypeEdge);
+                                    objSearch.setSize(indexSize);
+                                    objSearch.setQuery(qbMatchAll.toString());
 
-        ArrayList<Map<String,Long>> results = indexCall(client, indexTypeEdge);
+        /* get results */
+        ArrayList<Map<Long,Long>> results = client.rddEdgeScroll(objSearch);
 
-        System.out.println("Retrieved Edges: " + results.size());
+        //ArrayList<Map<Long,Long>> results = indexCall(client, indexTypeEdge);
 
-        return results;
+        System.out.println("Retrieved Edges: [" + results.size() + "]");
+
+        JavaRDD<Map<Long,Long>> rddResults = sc.parallelize(results);
+
+        return rddResults;
 
     }//getEdgeRDD
 
-
     /* getGraph */
-    public void getGraph() {
+    //public RDD<Integer> getGraph(JavaSparkContext sc) {
+    public JavaRDD<Map<String,Long>> getGraph(JavaSparkContext sc) {
 
-        System.out.println("Elastic Search Client ... ");
+        System.out.println("Retrieving graph ... ");
 
-        ElasticClient client;
+        QueryBuilder qbMatchAll = matchAllQuery();
 
-        /* Instantiate the ElasticSearch client and connect to Server */
-        client = new ElasticClient("trueno", hostname);
-        client.connect();
+        /* prepare search object */
+        SearchObject objSearch = new SearchObject();
+                                    objSearch.setIndex(index);
+                                    objSearch.setType(indexTypeVertex);
+                                    objSearch.setSize(indexSize);
+                                    objSearch.setQuery(qbMatchAll.toString());
+
+        /* get results */
+        ArrayList<Map<String,Long>> results = client.scroll(objSearch);
+
+        JavaRDD<Map<String,Long>> rddResults = sc.parallelize(results);
+
+        return rddResults;
 
     }//getGraph
 
+    /* Testing Scroll with ListenableActionFuture */
     public void scrollTest(){
-
-        System.out.println("Elastic Search Client ... ");
-
-        ElasticClient client;
-
-        /* Instantiate the ElasticSearch client and connect to Server */
-        client = new ElasticClient("trueno", hostname);
-        client.connect();
 
         double avg=0.0;
 
