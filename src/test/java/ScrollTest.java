@@ -1,6 +1,6 @@
 /**
- * SearchObject.java
- * This file provides an object for the search operation in ES
+ * ScrollTest.java
+ * This file provides a test for reading all records using scrolling
  *
  * @version 0.0.0.1
  * @author  Edgardo Barsallo
@@ -16,9 +16,18 @@
 import org.elasticsearch.index.query.QueryBuilder;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
+/* spark */
+//import org.apache.spark.rdd.RDD;
+import org.trueno.elasticsearch.spark.connector.ElasticClient;
+import org.trueno.elasticsearch.spark.connector.SearchObject;
+
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+
+import org.apache.spark.api.java.JavaRDD;
+import org.trueno.elasticsearch.spark.connector.Vertex;
 
 public class ScrollTest {
 
@@ -27,10 +36,12 @@ public class ScrollTest {
     private static String indexType = "v";
     private static Integer indexSize = 6000;
 
+    public ScrollTest(){
+
+    }
+
     /* doTest */
     private static double doTest(ElasticClient client) {
-
-        int count = 0;
         QueryBuilder qbMatchAll = matchAllQuery();
 
         /* start benchmark */
@@ -44,12 +55,18 @@ public class ScrollTest {
         objSearch.setQuery(qbMatchAll.toString());
 
         /* get results */
-        Map<String,Object>[] results = client.scroll(objSearch);
+        //Map<String,Long>[] results = client.scroll(objSearch);
+        //ArrayList<Long> results = client.scroll(objSearch);
+        ArrayList<Map<String,Long>> results = client.scroll(objSearch);
+
+        HashMap<String, Object> r1;
+
+        //JavaRDD<Object>[] results = client.scroll(objSearch);
 
         /* end benchmark */
         long endTime = System.currentTimeMillis();
 
-        return  (results.length*1.0)/(endTime - startTime)*1000;
+        return  (results.size()*1.0)/(endTime - startTime)*1000;
     }//doTest
 
     /* main */
@@ -62,9 +79,9 @@ public class ScrollTest {
         client.connect();
 
         double avg=0.0;
-        //for (int i=0; i<10; i++) {
-        avg += doTest(client);
-        //}
+
+        avg = doTest(client);
+
         System.out.println("avg: " + avg);
 
     }//main

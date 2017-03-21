@@ -60,13 +60,13 @@ import org.apache.spark.graphx.lib._
 import org.apache.spark.graphx.VertexRDD
 import org.apache.spark.rdd.RDD
 
-val transportClient = new ESTransportClient()
+val transportClient = new ESTransportClient("biogrid")
 
-val verticesRDD = transportClient.getVertexRDD()
+val verticesRDD = transportClient.getVertexRDD(sc)
 
-val edgesRDD = transportClient.getEdgeRDD()
+val edgesRDD = transportClient.getEdgeRDD(sc)
 
-val graph = transportClient.getGraph()
+val graph = transportClient.getGraph(sc)
 
 val g2 = PageRank.runUntilConvergence(graph,0.001)
 

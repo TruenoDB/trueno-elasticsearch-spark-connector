@@ -280,10 +280,10 @@ public class ElasticClient {
         ArrayList<Map<Long,Long>> sparkSources = new ArrayList<>();
 
         // .setFetchSource(new String[]{strFields}, null)
+        //  .setFetchSource(new String[]{strEdgeSource,strEdgeTarget}, null)
         SearchResponse scrollResp = this.client.prepareSearch(data.getIndex())
                 .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
                 .setScroll(tvScrollTime)
-                .setFetchSource(new String[]{strEdgeSource,strEdgeTarget}, null)
                 .setQuery(data.getQuery())
                 .setSize(this.hitsPerShard).execute().actionGet(); //n hits per shard will be returned for each scroll
 
