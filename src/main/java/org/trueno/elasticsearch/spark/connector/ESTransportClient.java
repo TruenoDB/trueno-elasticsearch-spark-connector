@@ -37,6 +37,7 @@ import org.apache.spark.*;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.graphx.Edge;
 import org.apache.spark.graphx.Graph;
+import org.apache.spark.graphx.VertexRDD;
 
 
 import java.util.Map;
@@ -77,10 +78,10 @@ public class ESTransportClient{
 
         /* prepare search object */
         SearchObject objSearch = new SearchObject();
-        objSearch.setIndex(index);
-        objSearch.setType(strIndexType);
-        objSearch.setSize(indexSize);
-        objSearch.setQuery(qbMatchAll.toString());
+                                objSearch.setIndex(index);
+                                objSearch.setType(strIndexType);
+                                objSearch.setSize(indexSize);
+                                objSearch.setQuery(qbMatchAll.toString());
 
         /* get results */
         ArrayList<Map<String,Long>> results = client.scroll(objSearch);
@@ -98,10 +99,10 @@ public class ESTransportClient{
 
         /* prepare search object */
         SearchObject objSearch = new SearchObject();
-        objSearch.setIndex(index);
-        objSearch.setType(indexTypeVertex);
-        objSearch.setSize(indexSize);
-        objSearch.setQuery(qbMatchAll.toString());
+                                    objSearch.setIndex(index);
+                                    objSearch.setType(indexTypeVertex);
+                                    objSearch.setSize(indexSize);
+                                    objSearch.setQuery(qbMatchAll.toString());
 
         client.lafScroll(objSearch).addListener(new ActionListener<SearchResponse>() {
             @Override
@@ -149,8 +150,7 @@ public class ESTransportClient{
 
     }//main
 
-    /* getVertexRDD */
-    //public ArrayList<Map<String,Long>> getVertexRDD() {
+    /* getVertexRDD JavaRDD */
     public JavaRDD<Map<String,Long>> getVertexRDD(JavaSparkContext sc) {
 
         System.out.println("Retrieving vertices ... ");
@@ -165,11 +165,23 @@ public class ESTransportClient{
 
     }//getVertexRDD
 
-    /* getEdgeRDD */
-    //public ArrayList<Map<String,Long>> getEdgeRDD() {
+    /* getVertexRDD ArrayList*/
+    public ArrayList<Map<String,Long>> alGetVertexRDD() {
+
+        System.out.println("Retrieving vertices Array List ... ");
+
+        ArrayList<Map<String,Long>> results = indexCall(client, indexTypeVertex);
+
+        System.out.println("Retrieved Vertices: [" + results.size() + "]");
+
+        return results;
+
+    }//getVertexRDD
+
+    /* getEdgeRDD JavaRDD*/
     public JavaRDD<Map<Long,Long>> getEdgeRDD(JavaSparkContext sc) {
 
-        System.out.println("Retrieving edges ... ");
+        System.out.println("Retrieving edges JavaRDD ... ");
 
         QueryBuilder qbMatchAll = matchAllQuery();
 
@@ -192,6 +204,30 @@ public class ESTransportClient{
         return rddResults;
 
     }//getEdgeRDD
+
+
+    /* getEdgeRDD ArrayList*/
+    public ArrayList<Map<Long,Long>> alGetEdgeRDD() {
+
+        System.out.println("Retrieving edges ArrayList ... ");
+
+        QueryBuilder qbMatchAll = matchAllQuery();
+
+        /* prepare search object */
+        SearchObject objSearch = new SearchObject();
+        objSearch.setIndex(index);
+        objSearch.setType(indexTypeEdge);
+        objSearch.setSize(indexSize);
+        objSearch.setQuery(qbMatchAll.toString());
+
+        /* get results */
+        ArrayList<Map<Long,Long>> results = client.rddEdgeScroll(objSearch);
+
+        System.out.println("Retrieved Edges: [" + results.size() + "]");
+
+        return results;
+
+    }//getEdgeRDD ArrayList
 
     /* getGraph */
     //public RDD<Integer> getGraph(JavaSparkContext sc) {

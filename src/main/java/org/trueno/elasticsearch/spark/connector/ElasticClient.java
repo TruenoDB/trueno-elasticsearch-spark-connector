@@ -230,6 +230,8 @@ public class ElasticClient {
         ArrayList<Map<String,Long>> sparkSources = new ArrayList<>();
 
         // .setFetchSource(new String[]{strFields}, null)
+        System.out.println("Index " + data.getIndex());
+
         SearchResponse scrollResp = this.client.prepareSearch(data.getIndex())
                 .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
                 .setScroll(tvScrollTime)
@@ -272,7 +274,7 @@ public class ElasticClient {
      */
     public ArrayList<Map<Long,Long>> rddEdgeScroll(SearchObject data) {
 
-        TimeValue tvScrollTime  = new TimeValue(this.scrollTimeOut);
+        TimeValue tvScrollTime  = new TimeValue(scrollTimeOut);
 
         boolean boolJustOnce = true;
 
@@ -285,7 +287,7 @@ public class ElasticClient {
                 .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
                 .setScroll(tvScrollTime)
                 .setQuery(data.getQuery())
-                .setSize(this.hitsPerShard).execute().actionGet(); //n hits per shard will be returned for each scroll
+                .setSize(hitsPerShard).execute().actionGet(); //n hits per shard will be returned for each scroll
 
         //Scroll until no hits are returned
         while (true) {
@@ -294,7 +296,7 @@ public class ElasticClient {
                 //hit returned
                 if(boolJustOnce) {
                     boolJustOnce = false;
-                    System.out.println(hit.getSource());
+                    System.out.println(hit);
                 }
 
                 Long lngSource = getFromSource(hit.getSource(), strEdgeSource);
@@ -326,7 +328,7 @@ public class ElasticClient {
     public ListenableActionFuture<SearchResponse> lafScroll(SearchObject data) {
 
         /* collecting results */
-        TimeValue tvScrollTime  = new TimeValue(this.scrollTimeOut);
+        TimeValue tvScrollTime  = new TimeValue(scrollTimeOut);
 
         //.addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
         ListenableActionFuture<SearchResponse> scrollResponse = this.client.prepareSearch(data.getIndex())
