@@ -59,14 +59,17 @@ public class ESTransportClient{
     private final int scrollTimeOut = 60000;
     private final String strClusterName = "trueno";
     private ElasticClient client;
+    private JavaSparkContext sc;
 
-    public ESTransportClient(String strIndex) {
+    public ESTransportClient(String strIndex, JavaSparkContext psc) {
 
         index = strIndex;
 
         /* Instantiate the ElasticSearch client and connect to Server */
         client = new ElasticClient(strClusterName, hostname);
         client.connect();
+
+        sc = psc;
 
         System.out.println("Connected to the Elastic Search Client ... ");
 
@@ -151,7 +154,7 @@ public class ESTransportClient{
     }//main
 
     /* getVertexRDD JavaRDD */
-    public JavaRDD<Map<String,Long>> getVertexRDD(JavaSparkContext sc) {
+    public JavaRDD<Map<String,Long>> getVertexRDD() {
 
         System.out.println("Retrieving vertices ... ");
 
@@ -179,7 +182,7 @@ public class ESTransportClient{
     }//getVertexRDD
 
     /* getEdgeRDD JavaRDD*/
-    public JavaRDD<Map<Long,Long>> getEdgeRDD(JavaSparkContext sc) {
+    public JavaRDD<Map<Long,Long>> getEdgeRDD() {
 
         System.out.println("Retrieving edges JavaRDD ... ");
 
@@ -194,8 +197,6 @@ public class ESTransportClient{
 
         /* get results */
         ArrayList<Map<Long,Long>> results = client.rddEdgeScroll(objSearch);
-
-        //ArrayList<Map<Long,Long>> results = indexCall(client, indexTypeEdge);
 
         System.out.println("Retrieved Edges: [" + results.size() + "]");
 
@@ -262,6 +263,6 @@ public class ESTransportClient{
 
         System.out.println("avg: " + avg);
 
-    }
+    }//scrollTest
 
 }//class
