@@ -8,7 +8,7 @@ Elasticsearch 2.x cluster accessible through [transport].
 ## Architecture
 
 <p align="center">
-  <img height="200" src="https://raw.githubusercontent.com/TruenoDB/trueno-elasticsearch-spark-connector/master/assets/images/trueno-elasticsearch-spark-connector.png">
+  <img height="400" src="https://raw.githubusercontent.com/TruenoDB/trueno-elasticsearch-spark-connector/master/assets/images/trueno-elasticsearch-spark-connector.png">
 </p>
 
 ## Installation
