@@ -1,4 +1,4 @@
-#Trueno ES Spark Connector Development Guide
+# Trueno ES Spark Connector Development Guide
 
 
 ### Adding connector dependency
@@ -36,9 +36,39 @@ import scala.collection.JavaConversions._
 import scala.collection.immutable.HashMap
 ```
 
+### Instantiating Trueno's ElasticSearch and Spark connector
+```scala
+val tc = new ESTransportClient(index, sc)
+```
+* **index** refers to the ElasticSearch Index. The cluster is set by default to *localhost*.
+* **sc** SparkContext
 
+### Retrieving Vertices from the ElasticSearch Cluster
+```scala
+val verticesESJavaRDD = tc.getLongVertexRDD()
+```
+* Retrieves a JavaRDD<Long> with **all** Vertices
+  
+  Spark-shell result
+  ```text
+     Retrieving vertices JavaRDD[Long] ... 
+     Index biogrid
+     Retrieved Vertices [316719]
+     verticesESJavaRDD: org.apache.spark.api.java.JavaRDD[Long] = ParallelCollectionRDD[3] at parallelize at ESTransportClient.java:201
+  ```
 
-## References
+### Converting JavaRDD<Long> to RDD<Long>
+```scala
+val verticesESRDD = verticesESJavaRDD.rdd
+```
+* Converts JavaRDD to RDD
+  Spark-Sehll Result
+    ```text
+    scala> val verticesESRDD = verticesESJavaRDD.rdd
+    verticesESRDD: org.apache.spark.rdd.RDD[Long] = ParallelCollectionRDD[3] at parallelize at ESTransportClient.java
+    ```
+
+### References
 * https://github.com/holdenk/learning-spark-examples/blob/master/src/main/java/com/oreilly/learningsparkexamples/java/logs/LogAnalyzerWindowed.java
 * https://github.com/elastic/elasticsearch-hadoop/blob/master/spark/core/main/scala/org/elasticsearch/spark/rdd/api/java/JavaEsSpark.scala
 * https://www.elastic.co/guide/en/elasticsearch/hadoop/current/spark.html
@@ -61,5 +91,5 @@ import scala.collection.immutable.HashMap
 * https://github.com/apache/spark/blob/master/graphx/src/main/scala/org/apache/spark/graphx/EdgeRDD.scala
 * https://gist.github.com/ceteri/c2a692b5161b23d92ed1
 
-##Books
+### Books
 * Data Algorithms: Recipes for Scaling Up with Hadoop and Spark
