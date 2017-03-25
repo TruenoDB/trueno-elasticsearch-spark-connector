@@ -16,8 +16,11 @@
 import org.elasticsearch.index.query.QueryBuilder;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+//import java.util.HashMap;
+//import java.util.Map;
+
+import scala.collection.mutable.Map;
+import scala.collection.mutable.HashMap;
 
 /* spark */
 //import org.apache.spark.rdd.RDD;
