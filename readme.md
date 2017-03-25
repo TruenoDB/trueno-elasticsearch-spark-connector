@@ -41,7 +41,7 @@ Type :help for more information.
 scala> import org.trueno.elasticsearch.spark.connector._
 import org.trueno.elasticsearch.spark.connector._
 
-scala> val transportClient = new ESTransportClient()
+scala> val transportClient = new ESTransportClient(index, sc)
 transportClient: org.trueno.elasticsearch.spark.connector.ESTransportClient = org.trueno.elasticsearch.spark.connector.ESTransportClient@31b7112d
 
 scala> val verticesRDD = transportClient.getVertexRDD()
@@ -60,14 +60,16 @@ import org.apache.spark.graphx.lib._
 import org.apache.spark.graphx.VertexRDD
 import org.apache.spark.rdd.RDD
 
-val transportClient = new ESTransportClient("biogrid")
+val transportClient = new ESTransportClient("biogrid",sc)
 
-val verticesRDD = transportClient.getVertexRDD(sc)
+val verticesRDD = transportClient.getVertexRDD()
 
-val edgesRDD = transportClient.getEdgeRDD(sc)
+val edgesRDD = transportClient.getEdgeRDD()
 
-val graph = transportClient.getGraph(sc)
+val graph = transportClient.getGraph()
 
 val g2 = PageRank.runUntilConvergence(graph,0.001)
 
 ```
+
+Please refer to the [development guide](./development-guide.md) for further explanation.
