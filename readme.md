@@ -5,6 +5,12 @@ Trueno's ElasticSearch Connector for [Apache Spark](#apache-spark).
 ## Requirements
 Elasticsearch 2.x cluster accessible through [transport].
 
+## Architecture
+
+<p align="center">
+  <img height="200" src="https://raw.githubusercontent.com/TruenoDB/trueno-elasticsearch-spark-connector/master/assets/images/trueno-elasticsearch-spark-connector.png">
+</p>
+
 ## Installation
 
 Available through any Maven-compatible tool:
