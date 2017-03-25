@@ -1,8 +1,40 @@
 #Trueno ES Spark Connector Development Guide
 
 
+### Adding connector dependency
+```scala
+import trueno.elasticsearch.spark.connector._
+```
 
+### Spark dependencies
+```scala
+import org.apache.spark.SparkContext    
+import org.apache.spark.SparkContext._
+import org.apache.spark.api.java.JavaPairRDD
+import org.apache.spark.api.java.JavaPairRDD.fromRDD
+import org.apache.spark.api.java.JavaRDD
+import org.apache.spark.api.java.JavaSparkContext
+```
 
+### GraphX Dependencies
+```scala
+/* GraphX references */
+import org.apache.spark.graphx._
+import org.apache.spark.graphx.lib._
+import org.apache.spark.graphx.VertexRDD
+import org.apache.spark.graphx.EdgeRDD
+import org.apache.spark.rdd.RDD
+```
+
+### Scala and Java collections
+```scala
+import java.util.{Map => JMap}
+
+import scala.collection.JavaConverters.mapAsScalaMapConverter
+import scala.collection.JavaConverters._
+import scala.collection.JavaConversions._
+import scala.collection.immutable.HashMap
+```
 
 
 
@@ -28,3 +60,6 @@
 * http://www.scala-lang.org/api/2.12.0/scala/collection/Iterable.html
 * https://github.com/apache/spark/blob/master/graphx/src/main/scala/org/apache/spark/graphx/EdgeRDD.scala
 * https://gist.github.com/ceteri/c2a692b5161b23d92ed1
+
+##Books
+* Data Algorithms: Recipes for Scaling Up with Hadoop and Spark
