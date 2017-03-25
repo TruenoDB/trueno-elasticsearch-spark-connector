@@ -1,7 +1,7 @@
-# Trueno ES Spark Connector Development Guide
+# Trueno's ElasticSearch Spark Connector Development Guide
 
 
-### Adding connector dependency
+### Including connector dependency
 ```scala
 import trueno.elasticsearch.spark.connector._
 ```
@@ -47,7 +47,7 @@ val tc = new ESTransportClient(index, sc)
 ```scala
 val verticesESJavaRDD = tc.getLongVertexRDD()
 ```
-* Retrieves a JavaRDD<Long> with **all** Vertices
+* Retrieves a **JavaRDD[Long]** with **all** Vertices
   
   Spark-shell result
   ```text
@@ -57,16 +57,49 @@ val verticesESJavaRDD = tc.getLongVertexRDD()
      verticesESJavaRDD: org.apache.spark.api.java.JavaRDD[Long] = ParallelCollectionRDD[3] at parallelize at ESTransportClient.java:201
   ```
 
-### Converting JavaRDD<Long> to RDD<Long>
+### Converting JavaRDD[Long] to RDD[Long]
 ```scala
 val verticesESRDD = verticesESJavaRDD.rdd
 ```
-* Converts JavaRDD to RDD
-  Spark-Sehll Result
+* Converts **JavaRDD** to **RDD**
+  
+  Spark-Shell Result
     ```text
     scala> val verticesESRDD = verticesESJavaRDD.rdd
     verticesESRDD: org.apache.spark.rdd.RDD[Long] = ParallelCollectionRDD[3] at parallelize at ESTransportClient.java
     ```
+
+### Retrieving Edges from ElasticSearch Cluster
+```scala
+val edgeJavaRDD = tc.getEdgeRDDHashMap()
+```
+
+### Converting JavaRDD to RDD
+```scala
+val esRDD = scalaFakeRDD.rdd
+```
+* Converts from **JavaRDD** to **RDD**
+
+  **Spark-Shell** result
+    ```text
+       esRDD: org.apache.spark.rdd.RDD[scala.collection.mutable.Map[Long,Long]] = ParallelCollectionRDD[1] at parallelize at ESTransportClient.java:375
+    ```
+
+### Generating EdgeRDD from the retrieved ElasticSearch RDD
+```scala
+val edgeRDD: RDD[Edge[Long]] = esRDD.flatMap( x=> ( x.map (y => ( Edge(y._1, y._2, 1.toLong) ) ) ) )
+```
+
+  **Spark-Shell** result
+    ```text
+       edgeRDD: org.apache.spark.rdd.RDD[org.apache.spark.graphx.Edge[Long]] = MapPartitionsRDD[2] at flatMap at <console>:60
+    ```
+
+
+
+
+
+
 
 ### References
 * https://github.com/holdenk/learning-spark-examples/blob/master/src/main/java/com/oreilly/learningsparkexamples/java/logs/LogAnalyzerWindowed.java
