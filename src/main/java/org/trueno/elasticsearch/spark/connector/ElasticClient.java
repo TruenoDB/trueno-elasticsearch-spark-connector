@@ -42,8 +42,17 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+//import java.util.HashMap;
+//import java.util.Map;
+
+import scala.collection.mutable.Map;
+import scala.collection.mutable.HashMap;
+
+import scala.collection.JavaConverters.*;
+import scala.collection.JavaConversions.*;
+
+//import scala.collection.immutable.Map;
+//import scala.collection.mutable.HashMap;
 
 public class ElasticClient {
 
@@ -100,39 +109,39 @@ public class ElasticClient {
      * @param data -> SearchObject
      * @return results -> ArrayList
      */
-    public Map<String,Object>[] search(SearchObject data) {
-
-        /* collecting results */
-        ArrayList<Map<String,Object>> sources = new ArrayList<>();
-
-        try{
-
-            SearchRequestBuilder srBuilder = this.client.prepareSearch(data.getIndex())
-                    .setTypes(data.getType())
-                    .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
-                    .setSize(data.getSize())
-                    .setQuery(QueryBuilders.wrapperQuery(data.getQuery()));
-
-            SearchResponse resp = srBuilder.get();
-
-            SearchHit[] results = resp.getHits().getHits();
-
-            //System.out.println("Hits are " + results.length);
-
-            /* for each hit result */
-            for(SearchHit hit: results){
-
-                /* add map to array, note: a map is the equivalent of a JSON object */
-                sources.add(ImmutableMap.of(this.strSource, hit.getSource()));
-            }
-
-            return sources.toArray(new Map[sources.size()]);
-
-        }catch (Exception e){
-            System.out.println(e);
-        }
-        return new Map[0];
-    }
+//    public Map<String,Object>[] search(SearchObject data) {
+//
+//        /* collecting results */
+//        ArrayList<Map<String,Object>> sources = new ArrayList<>();
+//
+//        try{
+//
+//            SearchRequestBuilder srBuilder = this.client.prepareSearch(data.getIndex())
+//                    .setTypes(data.getType())
+//                    .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
+//                    .setSize(data.getSize())
+//                    .setQuery(QueryBuilders.wrapperQuery(data.getQuery()));
+//
+//            SearchResponse resp = srBuilder.get();
+//
+//            SearchHit[] results = resp.getHits().getHits();
+//
+//            //System.out.println("Hits are " + results.length);
+//
+//            /* for each hit result */
+//            for(SearchHit hit: results){
+//
+//                /* add map to array, note: a map is the equivalent of a JSON object */
+//                sources.add(ImmutableMap.of(this.strSource, hit.getSource()));
+//            }
+//
+//            return sources.toArray(new Map[sources.size()]);
+//
+//        }catch (Exception e){
+//            System.out.println(e);
+//        }
+//        return new Map[0];
+//    }
 
     /**
      * The bulk API allows one to index and delete several documents in a single request.
@@ -244,14 +253,71 @@ public class ElasticClient {
 
             for (SearchHit hit : scrollResp.getHits().getHits()) {
                 //hit returned
-//                if(boolJustOnce) {
-//                    boolJustOnce = false;
-//                    System.out.println(hit.getSource());
-//                }
+                if (boolJustOnce) {
+                    boolJustOnce = false;
+                    System.out.println(hit.getSource());
+                }
+
+                    Long lngId = getFromSource(hit.getSource(), strId);
+                    if (lngId != null) {
+                        Map<String, Long> hmVertex = new HashMap<String, Long>();
+                        hmVertex.put(strId,lngId);
+                        sparkSources.add(hmVertex);
+                    }
+
+                }//for
+
+                scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(tvScrollTime).execute().actionGet();
+
+                //Break condition: No hits are returned
+                if (scrollResp.getHits().getHits().length == 0) {
+                    return sparkSources;//.toArray(new Map[sparkSources.size()]);
+                }
+
+        }//while
+
+    }//scroll
+
+
+
+    /**
+     * The Scroll API allows you to execute a search query and get back search hits that match the query.
+     * The query can either be provided using a simple query string as a parameter, or using a request body
+     * @param data -> SearchObject
+     * @return results -> ArrayList
+     */
+    public ArrayList<Long> scrollVertex(SearchObject data) {
+
+        TimeValue tvScrollTime  = new TimeValue(this.scrollTimeOut);
+
+        boolean boolJustOnce = true;
+
+        /* collect results in array */
+        ArrayList<Long> sparkSources = new ArrayList<>();
+
+        // .setFetchSource(new String[]{strFields}, null)
+        System.out.println("Index " + data.getIndex());
+
+        SearchResponse scrollResp = this.client.prepareSearch(data.getIndex())
+                .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
+                .setScroll(tvScrollTime)
+                .setFetchSource(new String[]{strId}, null)
+                .setQuery(data.getQuery())
+                .setSize(this.hitsPerShard).execute().actionGet(); //n hits per shard will be returned for each scroll
+
+        //Scroll until no hits are returned
+        while (true) {
+
+            for (SearchHit hit : scrollResp.getHits().getHits()) {
+                //hit returned
+                if(boolJustOnce) {
+                    boolJustOnce = false;
+                    System.out.println(hit.getSource());
+                }
 
                 Long lngId = getFromSource(hit.getSource(), strId);
                 if (lngId != null) {
-                    sparkSources.add(ImmutableMap.of(strId, lngId));
+                    sparkSources.add(lngId);
                 }
 
             }//for
@@ -260,11 +326,12 @@ public class ElasticClient {
 
             //Break condition: No hits are returned
             if (scrollResp.getHits().getHits().length == 0) {
-                return sparkSources;//.toArray(new Map[sparkSources.size()]);
+                return sparkSources;
             }
         }//while
 
     }//scroll
+
 
     /**
      * The Scroll API allows you to execute a search query and get back search hits that match the query.
@@ -272,7 +339,7 @@ public class ElasticClient {
      * @param data -> SearchObject
      * @return results -> ArrayList
      */
-    public ArrayList<Map<Long,Long>> rddEdgeScroll(SearchObject data) {
+    public ArrayList<Map<Long,Long>> scrollEdge(SearchObject data) {
 
         TimeValue tvScrollTime  = new TimeValue(scrollTimeOut);
 
@@ -302,8 +369,12 @@ public class ElasticClient {
                 Long lngSource = getFromSource(hit.getSource(), strEdgeSource);
                 Long lngTarget = getFromSource(hit.getSource(), strEdgeTarget);
 
+                Map<Long, Long> hmEdge = new HashMap<Long, Long>();
+
+                hmEdge.put(Long.parseLong(strEdgeSource),Long.parseLong(strEdgeTarget));
+
                 if (lngSource != null && lngTarget != null) {
-                    sparkSources.add(ImmutableMap.of(lngSource, lngTarget));
+                    sparkSources.add(hmEdge);
                 }
 
             }//for
@@ -312,7 +383,63 @@ public class ElasticClient {
 
             //Break condition: No hits are returned
             if (scrollResp.getHits().getHits().length == 0) {
-                return sparkSources;//.toArray(new Map[sparkSources.size()]);
+                return sparkSources;
+            }
+        }//while
+
+    }//scroll
+
+    /**
+     * The Scroll API allows you to execute a search query and get back search hits that match the query.
+     * The query can either be provided using a simple query string as a parameter, or using a request body
+     * @param data -> SearchObject
+     * @return results -> ArrayList
+     */
+    public Map<Long,Long> scrollEdgeHashMap(SearchObject data) {
+
+        TimeValue tvScrollTime  = new TimeValue(scrollTimeOut);
+
+        boolean boolJustOnce = true;
+
+        /* collect results in array */
+        ArrayList<Map<Long,Long>> sparkSources = new ArrayList<>();
+
+        Map<Long, Long> hmEdge = new HashMap<Long, Long>();
+
+        // .setFetchSource(new String[]{strFields}, null)
+        //  .setFetchSource(new String[]{strEdgeSource,strEdgeTarget}, null)
+        SearchResponse scrollResp = this.client.prepareSearch(data.getIndex())
+                .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
+                .setScroll(tvScrollTime)
+                .setQuery(data.getQuery())
+                .setSize(hitsPerShard).execute().actionGet(); //n hits per shard will be returned for each scroll
+
+        //Scroll until no hits are returned
+        while (true) {
+
+            for (SearchHit hit : scrollResp.getHits().getHits()) {
+                //hit returned
+                if(boolJustOnce) {
+                    boolJustOnce = false;
+                    System.out.println(hit);
+                }
+
+                Long lngSource = getFromSource(hit.getSource(), strEdgeSource);
+                Long lngTarget = getFromSource(hit.getSource(), strEdgeTarget);
+
+                hmEdge.put(Long.parseLong(strEdgeSource),Long.parseLong(strEdgeTarget));
+
+                if (lngSource != null && lngTarget != null) {
+                    sparkSources.add(hmEdge);
+                }
+
+            }//for
+
+            scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(tvScrollTime).execute().actionGet();
+
+            //Break condition: No hits are returned
+            if (scrollResp.getHits().getHits().length == 0) {
+                return hmEdge;
             }
         }//while
 
