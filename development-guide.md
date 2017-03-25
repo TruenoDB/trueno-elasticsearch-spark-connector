@@ -91,9 +91,10 @@ val edgeRDD: RDD[Edge[Long]] = esRDD.flatMap( x=> ( x.map (y => ( Edge(y._1, y._
 ```
 
   **Spark-Shell** result
-    ```text
-       edgeRDD: org.apache.spark.rdd.RDD[org.apache.spark.graphx.Edge[Long]] = MapPartitionsRDD[2] at flatMap at <console>:60
-    ```
+  
+```text
+   edgeRDD: org.apache.spark.rdd.RDD[org.apache.spark.graphx.Edge[Long]] = MapPartitionsRDD[2] at flatMap at <console>:60
+```
 
 
 
@@ -123,6 +124,24 @@ val edgeRDD: RDD[Edge[Long]] = esRDD.flatMap( x=> ( x.map (y => ( Edge(y._1, y._
 * http://www.scala-lang.org/api/2.12.0/scala/collection/Iterable.html
 * https://github.com/apache/spark/blob/master/graphx/src/main/scala/org/apache/spark/graphx/EdgeRDD.scala
 * https://gist.github.com/ceteri/c2a692b5161b23d92ed1
+* http://stackoverflow.com/questions/19598369/cant-instantiate-map-well-why-not
+* http://stackoverflow.com/questions/9058070/how-to-convert-a-mutable-hashmap-into-an-immutable-equivalent-in-scala
+* http://stackoverflow.com/questions/33112727/get-values-from-an-rdd
+* http://stackoverflow.com/questions/28111455/how-to-transform-rddkey-value-into-mapkey-rddvalue
+* http://stackoverflow.com/questions/3993613/what-is-the-syntax-for-adding-an-element-to-a-scala-collection-mutable-map
+* https://spark.apache.org/docs/latest/api/java/index.html?org/apache/spark/api/java/JavaRDD.html
+* http://alvinalexander.com/scala/converting-java-collections-to-scala-list-map-array
+* http://stackoverflow.com/questions/31628605/how-to-convert-a-hashmap-to-a-javapairrdd-in-spark
+* http://stackoverflow.com/questions/21495117/using-scala-map-in-java
+* http://softwareengineering.stackexchange.com/questions/203464/how-do-i-initialize-a-scala-map-with-more-than-4-initial-elements-in-java
+* http://alvinalexander.com/scala/scala-maps-map-class-examples
+* https://www.cs.helsinki.fi/u/wikla/OTS/Sisalto/examples/html/ch17.html
+* http://www.cs.sjsu.edu/~pearce/modules/lectures/scala/maps/index.htm
+* https://github.com/SHSE/spark-es/blob/master/src/main/scala/org/apache/spark/elasticsearch/ElasticSearchRDD.scala
+* [Ankur] http://apache-spark-user-list.1001560.n3.nabble.com/noob-how-to-extract-different-members-of-a-VertexRDD-td12399.html
+* http://stackoverflow.com/questions/32080708/how-to-convert-a-map-to-sparks-rdd
+
 
 ### Books
 * Data Algorithms: Recipes for Scaling Up with Hadoop and Spark
+* GraphX in Action
