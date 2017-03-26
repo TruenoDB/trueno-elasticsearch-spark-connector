@@ -203,7 +203,7 @@ public class ElasticClient {
     /* Get an specific valut from object */
     private Long getFromSource(Object objSource, String strField){
 
-        HashMap hashMap = (HashMap) objSource;
+        java.util.HashMap hashMap = (java.util.HashMap) objSource;
         Object objID = hashMap.get(strField);
         Long lngResult = null;
 
@@ -371,9 +371,8 @@ public class ElasticClient {
 
                 Map<Long, Long> hmEdge = new HashMap<Long, Long>();
 
-                hmEdge.put(Long.parseLong(strEdgeSource),Long.parseLong(strEdgeTarget));
-
                 if (lngSource != null && lngTarget != null) {
+                    hmEdge.put(lngSource,lngTarget);
                     sparkSources.add(hmEdge);
                 }
 
@@ -427,9 +426,8 @@ public class ElasticClient {
                 Long lngSource = getFromSource(hit.getSource(), strEdgeSource);
                 Long lngTarget = getFromSource(hit.getSource(), strEdgeTarget);
 
-                hmEdge.put(Long.parseLong(strEdgeSource),Long.parseLong(strEdgeTarget));
-
                 if (lngSource != null && lngTarget != null) {
+                    hmEdge.put(lngSource,lngTarget);
                     sparkSources.add(hmEdge);
                 }
 
