@@ -461,6 +461,7 @@ public class ElasticClient {
                 .setQuery(data.getQuery())
                 .setSize(this.hitsPerShard).execute(); //100 hits per shard will be returned for each scroll
 
+
         return scrollResponse;
 
     }//lafScroll
