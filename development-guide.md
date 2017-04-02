@@ -140,6 +140,7 @@ val edgeRDD: RDD[Edge[Long]] = esRDD.flatMap( x=> ( x.map (y => ( Edge(y._1, y._
 * https://github.com/SHSE/spark-es/blob/master/src/main/scala/org/apache/spark/elasticsearch/ElasticSearchRDD.scala
 * [Ankur] http://apache-spark-user-list.1001560.n3.nabble.com/noob-how-to-extract-different-members-of-a-VertexRDD-td12399.html
 * http://stackoverflow.com/questions/32080708/how-to-convert-a-map-to-sparks-rdd
+* https://stackoverflow.com/questions/32396477/how-to-create-a-graph-from-a-csv-file-using-graph-fromedgetuples-in-spark-scala
 
 
 ### Books

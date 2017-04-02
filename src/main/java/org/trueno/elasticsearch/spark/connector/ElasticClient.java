@@ -14,10 +14,10 @@
  */
 package org.trueno.elasticsearch.spark.connector;
 
+/* Inmutable Map and Lists */
 import com.google.common.collect.ImmutableMap;
 
 /* ElasticSearch dependencies */
-
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.ListenableActionFuture;
@@ -28,6 +28,7 @@ import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.sort.SortOrder;
@@ -42,8 +43,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.io.PrintStream;
 import java.util.ArrayList;
-//import java.util.HashMap;
-//import java.util.Map;
 
 import scala.collection.mutable.Map;
 import scala.collection.mutable.HashMap;
@@ -51,8 +50,7 @@ import scala.collection.mutable.HashMap;
 import scala.collection.JavaConverters.*;
 import scala.collection.JavaConversions.*;
 
-//import scala.collection.immutable.Map;
-//import scala.collection.mutable.HashMap;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class ElasticClient {
 
@@ -66,7 +64,6 @@ public class ElasticClient {
     private final String strId = "id";
     private final String strEdgeSource = "source";
     private final String strEdgeTarget = "target";
-
 
     /**
      * Constructor
@@ -278,8 +275,6 @@ public class ElasticClient {
 
     }//scroll
 
-
-
     /**
      * The Scroll API allows you to execute a search query and get back search hits that match the query.
      * The query can either be provided using a simple query string as a parameter, or using a request body
@@ -296,12 +291,16 @@ public class ElasticClient {
         ArrayList<Long> sparkSources = new ArrayList<>();
 
         // .setFetchSource(new String[]{strFields}, null)
-        System.out.println("Index " + data.getIndex());
+        System.out.println("Index " + data.getIndex() + " type " + data.getType());
+
+        //.setFetchSource(new String[]{strId}, null)
+        //.setQuery(data.getQuery())
+        //after scroll
 
         SearchResponse scrollResp = this.client.prepareSearch(data.getIndex())
                 .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
+                .setTypes(data.getType())
                 .setScroll(tvScrollTime)
-                .setFetchSource(new String[]{strId}, null)
                 .setQuery(data.getQuery())
                 .setSize(this.hitsPerShard).execute().actionGet(); //n hits per shard will be returned for each scroll
 
@@ -332,7 +331,6 @@ public class ElasticClient {
 
     }//scroll
 
-
     /**
      * The Scroll API allows you to execute a search query and get back search hits that match the query.
      * The query can either be provided using a simple query string as a parameter, or using a request body
@@ -348,12 +346,12 @@ public class ElasticClient {
         /* collect results in array */
         ArrayList<Map<Long,Long>> sparkSources = new ArrayList<>();
 
-        // .setFetchSource(new String[]{strFields}, null)
         //  .setFetchSource(new String[]{strEdgeSource,strEdgeTarget}, null)
         SearchResponse scrollResp = this.client.prepareSearch(data.getIndex())
                 .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
+                .setTypes(data.getType())
                 .setScroll(tvScrollTime)
-                .setQuery(data.getQuery())
+                .setQuery(QueryBuilders.wrapperQuery(data.getQuery()))
                 .setSize(hitsPerShard).execute().actionGet(); //n hits per shard will be returned for each scroll
 
         //Scroll until no hits are returned
@@ -363,7 +361,7 @@ public class ElasticClient {
                 //hit returned
                 if(boolJustOnce) {
                     boolJustOnce = false;
-                    System.out.println(hit);
+                    System.out.println(hit.getSource());
                 }
 
                 Long lngSource = getFromSource(hit.getSource(), strEdgeSource);
@@ -409,6 +407,7 @@ public class ElasticClient {
         //  .setFetchSource(new String[]{strEdgeSource,strEdgeTarget}, null)
         SearchResponse scrollResp = this.client.prepareSearch(data.getIndex())
                 .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
+                .setTypes(data.getType())
                 .setScroll(tvScrollTime)
                 .setQuery(data.getQuery())
                 .setSize(hitsPerShard).execute().actionGet(); //n hits per shard will be returned for each scroll
@@ -457,6 +456,7 @@ public class ElasticClient {
 
         //.addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
         ListenableActionFuture<SearchResponse> scrollResponse = this.client.prepareSearch(data.getIndex())
+                .setTypes(data.getType())
                 .setScroll(tvScrollTime)
                 .setQuery(data.getQuery())
                 .setSize(this.hitsPerShard).execute(); //100 hits per shard will be returned for each scroll

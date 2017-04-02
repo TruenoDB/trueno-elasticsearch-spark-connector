@@ -16,7 +16,6 @@
 package org.trueno.elasticsearch.spark.connector;
 
 /* ElasticSearch dependencies */
-import com.google.common.collect.ImmutableList;
 import org.elasticsearch.index.query.QueryBuilder;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import org.elasticsearch.action.search.SearchResponse;
@@ -37,16 +36,16 @@ import org.apache.spark.graphx.VertexRDD;
 import org.apache.commons.lang.StringUtils;
 
 /* Utils */
-//import java.util.Map;
 import scala.collection.mutable.Map;
 import scala.collection.mutable.HashMap;
-//import scala.collection.immutable.Map;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import scala.collection.JavaConverters.*;
 
+/* Inmutable Map and Lists */
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 
 public class ESTransportClient{
 
@@ -54,7 +53,7 @@ public class ESTransportClient{
     private static String index = "biogrid";
     private static String indexTypeVertex = "v";
     private static String indexTypeEdge = "e";
-    private static Integer indexSize = 6000;
+    private static Integer indexSize = 100;
     private final String strSource = "_source";
     private final int scrollTimeOut = 60000;
     private final String strClusterName = "trueno";
@@ -85,10 +84,10 @@ public class ESTransportClient{
 
         /* prepare search object */
         SearchObject objSearch = new SearchObject();
-        objSearch.setIndex(index);
-        objSearch.setType(indexTypeVertex);
-        objSearch.setSize(indexSize);
-        objSearch.setQuery(qbMatchAll.toString());
+                                    objSearch.setIndex(index);
+                                    objSearch.setType(indexTypeVertex);
+                                    objSearch.setSize(indexSize);
+                                    objSearch.setQuery(qbMatchAll.toString());
 
         /* get results */
         ArrayList<Map<String,Long>> results = client.scroll(objSearch);
@@ -135,10 +134,10 @@ public class ESTransportClient{
 
         /* prepare search object */
         SearchObject objSearch = new SearchObject();
-        objSearch.setIndex(index);
-        objSearch.setType(indexTypeVertex);
-        objSearch.setSize(indexSize);
-        objSearch.setQuery(qbMatchAll.toString());
+                                    objSearch.setIndex(index);
+                                    objSearch.setType(indexTypeVertex);
+                                    objSearch.setSize(indexSize);
+                                    objSearch.setQuery(qbMatchAll.toString());
 
          /* get results */
         ArrayList<Map<String,Long>> results = client.scroll(objSearch);
@@ -183,10 +182,10 @@ public class ESTransportClient{
 
         /* prepare search object */
         SearchObject objSearch = new SearchObject();
-        objSearch.setIndex(index);
-        objSearch.setType(indexTypeEdge);
-        objSearch.setSize(indexSize);
-        objSearch.setQuery(qbMatchAll.toString());
+                                    objSearch.setIndex(index);
+                                    objSearch.setType(indexTypeEdge);
+                                    objSearch.setSize(indexSize);
+                                    objSearch.setQuery(qbMatchAll.toString());
 
         /* get results */
         Map<Long,Long> results = client.scrollEdgeHashMap(objSearch);
@@ -208,10 +207,10 @@ public class ESTransportClient{
 
         /* prepare search object */
         SearchObject objSearch = new SearchObject();
-        objSearch.setIndex(index);
-        objSearch.setType(indexTypeEdge);
-        objSearch.setSize(indexSize);
-        objSearch.setQuery(qbMatchAll.toString());
+                                    objSearch.setIndex(index);
+                                    objSearch.setType(indexTypeEdge);
+                                    objSearch.setSize(indexSize);
+                                    objSearch.setQuery(qbMatchAll.toString());
 
         /* get results */
         ArrayList<Map<Long,Long>> results = client.scrollEdge(objSearch);
@@ -221,5 +220,41 @@ public class ESTransportClient{
         return results;
 
     }//getEdgeRDD ArrayList
+
+    /**
+     * TEST DATA ---------------------------------------------------------------------->
+     * @return
+     */
+    public JavaRDD<Map<Long,Long>> scalaMapLLEdgeFakeData() {
+
+        System.out.println("Generating fake data ... ");
+
+        Map<Long, Long> numbers1 = new HashMap<Long, Long>();
+
+        numbers1.put(new Long(1),new Long(2));
+        numbers1.put(new Long(3),new Long(4));
+        numbers1.put(new Long(5),new Long(6));
+        numbers1.put(new Long(7),new Long(8));
+        numbers1.put(new Long(9),new Long(10));
+
+        JavaRDD<Map<Long, Long>> javaRDD = jsc.parallelize(ImmutableList.of(numbers1));
+
+        return javaRDD;
+
+    }//scalaMapLLEdgeFakeData
+
+    public JavaRDD<Long> longMapVertexFakeData() {
+
+        System.out.println("Generating fake data ... ");
+
+        Long numbers1 = new Long(1);
+        Long numbers2 = new Long(2);
+        Long numbers3 = new Long(3);
+
+        JavaRDD<Long> javaRDD = jsc.parallelize(ImmutableList.of(numbers1, numbers2, numbers3));
+
+        return javaRDD;
+
+    }//longMapVertexFakeData
 
 }//class
