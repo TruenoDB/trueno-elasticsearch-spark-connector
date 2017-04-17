@@ -291,7 +291,7 @@ public class ElasticClient {
         ArrayList<Long> sparkSources = new ArrayList<>();
 
         // .setFetchSource(new String[]{strFields}, null)
-        System.out.println("Index " + data.getIndex() + " type " + data.getType());
+        //System.out.println("Index " + data.getIndex() + " type " + data.getType());
 
         //.setFetchSource(new String[]{strId}, null)
         //.setQuery(data.getQuery())
@@ -311,7 +311,7 @@ public class ElasticClient {
                 //hit returned
                 if(boolJustOnce) {
                     boolJustOnce = false;
-                    System.out.println(hit.getSource());
+                    //System.out.println(hit.getSource());
                 }
 
                 Long lngId = getFromSource(hit.getSource(), strId);
@@ -361,7 +361,7 @@ public class ElasticClient {
                 //hit returned
                 if(boolJustOnce) {
                     boolJustOnce = false;
-                    System.out.println(hit.getSource());
+                    //System.out.println(hit.getSource());
                 }
 
                 Long lngSource = getFromSource(hit.getSource(), strEdgeSource);

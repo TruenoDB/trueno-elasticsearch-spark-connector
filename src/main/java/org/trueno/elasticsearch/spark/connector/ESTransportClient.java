@@ -103,7 +103,7 @@ public class ESTransportClient{
     /* getVertexRDD JavaRDD[Long] */
     public JavaRDD<Long> getLongVertexRDD() {
 
-        System.out.println("Retrieving vertices JavaRDD[Long] ... ");
+        //System.out.println("Retrieving vertices JavaRDD[Long] ... ");
 
         QueryBuilder qbMatchAll = matchAllQuery();
 
@@ -117,7 +117,7 @@ public class ESTransportClient{
         /* get results */
         ArrayList<Long> results = client.scrollVertex(objSearch);
 
-        System.out.println("Retrieved Vertices [" + results.size() + "]");
+        //System.out.println("Retrieved Vertices [" + results.size() + "]");
 
         JavaRDD<Long> rddResults = jsc.parallelize(results);
 
@@ -148,10 +148,10 @@ public class ESTransportClient{
 
     }//getVertexRDD ArrayList
 
-    /* getEdgeRDD JavaRDD*/
+    /* getEdgeRDD JavaRDD */
     public JavaRDD<Map<Long,Long>> getEdgeRDD() {
 
-        System.out.println("Retrieving edges JavaRDD[Map<Long,Long>] ... ");
+        //System.out.println("Retrieving edges JavaRDD[Map<Long,Long>] ... ");
 
         QueryBuilder qbMatchAll = matchAllQuery();
 
@@ -165,7 +165,7 @@ public class ESTransportClient{
         /* get results */
         ArrayList<Map<Long,Long>> results = client.scrollEdge(objSearch);
 
-        System.out.println("Retrieved Edges: [" + results.size() + "]");
+        //System.out.println("Retrieved Edges: [" + results.size() + "]");
 
         JavaRDD<Map<Long,Long>> rddResults = jsc.parallelize(results);
 

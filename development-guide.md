@@ -141,7 +141,19 @@ val edgeRDD: RDD[Edge[Long]] = esRDD.flatMap( x=> ( x.map (y => ( Edge(y._1, y._
 * [Ankur] http://apache-spark-user-list.1001560.n3.nabble.com/noob-how-to-extract-different-members-of-a-VertexRDD-td12399.html
 * http://stackoverflow.com/questions/32080708/how-to-convert-a-map-to-sparks-rdd
 * https://stackoverflow.com/questions/32396477/how-to-create-a-graph-from-a-csv-file-using-graph-fromedgetuples-in-spark-scala
+* https://stackoverflow.com/questions/33892240/large-task-size-for-simplest-program
 
+
+### Issues
+* https://github.com/graphframes/graphframes/issues/116
+* https://stackoverflow.com/questions/32396477/how-to-create-a-graph-from-a-csv-file-using-graph-fromedgetuples-in-spark-scala
+
+### Building Spark
+*  https://github.com/apache/spark
+
+```text
+build/mvn -DskipTests clean package
+```
 
 ### Books
 * Data Algorithms: Recipes for Scaling Up with Hadoop and Spark
