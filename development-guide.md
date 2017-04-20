@@ -97,7 +97,38 @@ val edgeRDD: RDD[Edge[Long]] = esRDD.flatMap( x=> ( x.map (y => ( Edge(y._1, y._
 ```
 
 
+### Merge two graphs
 
+Merge treats equally named vertices from the two graphs as the same vertex and merging the adjacent edges.
+
+
+#### Merge two graphs
+
+```scala
+import org.apache.spark.graphx._
+
+def mergeGraphs(graph1:Graph[String, String], graph2:Graph[String,String]) = {
+  val v = graph1.vertices.map(_._2).union(graph2.vertices.map(_._2))
+          .distinct
+          .zipWithIndex
+            
+  def edgesWithNewVertexIds(graph: Graph[String,String]) = 
+     graph.triplets
+          .map(et => (et.srcAttr, (et.attr,et.dstAttr)))
+          .join(v)
+          .map(x => (x._2._1._2, (x._2._2, x._2._1._1)))
+          .join(v)
+          .map(x => new Edge(x._2._1._1, x._2._2, x._2._1._2))
+
+  Graph(v.map(_.swap), edgesWithNewVertexIds(graph1).union(edgesWithNewVertexIds(graph2)))
+
+}//end mergeGraphs
+
+```
+
+#### Algorithm
+It constructs a common vertex dictionary in **v**. It generates an RDD of vertex attributes for the first input graph **graph1**. Then, the second graph (**graph2**).
+The two graphs (RDDs) are concatenated with **union**. The unique set (RDD) is taken using **distinct**. Finally, new IDs for each vertex are generated.  
 
 
 

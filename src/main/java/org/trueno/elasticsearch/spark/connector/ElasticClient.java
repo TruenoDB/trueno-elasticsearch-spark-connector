@@ -197,7 +197,7 @@ public class ElasticClient {
         }
     }//bulk
 
-    /* Get an specific valut from object */
+    /* Get an specific value from object */
     private Long getFromSource(Object objSource, String strField){
 
         java.util.HashMap hashMap = (java.util.HashMap) objSource;
