@@ -76,7 +76,7 @@ val edgeJavaRDD = tc.getEdgeRDDHashMap()
 
 ### Converting JavaRDD to RDD
 ```scala
-val esRDD = scalaFakeRDD.rdd
+val esRDD = edgeJavaRDD.rdd
 ```
 * Converts from **JavaRDD** to **RDD**
 
@@ -131,7 +131,13 @@ It constructs a common vertex dictionary in **v**. It generates an RDD of vertex
 The two graphs (RDDs) are concatenated with **union**. The unique set (RDD) is taken using **distinct**. Finally, new IDs for each vertex are generated.  
 
 
+#### Using mergeGraphs
+```scala
+val combined = mergeGraphs(biogrid1, biogrid2)
 
+//combined.triplets.foreach(t => println(s"${t.srcAttr} == ${t.attr} == ${t.dstAttr} "))
+combined.foreach(println)
+```
 
 ### References
 * https://github.com/holdenk/learning-spark-examples/blob/master/src/main/java/com/oreilly/learningsparkexamples/java/logs/LogAnalyzerWindowed.java
