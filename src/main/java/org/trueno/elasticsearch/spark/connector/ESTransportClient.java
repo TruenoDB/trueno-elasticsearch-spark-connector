@@ -57,30 +57,32 @@ public class ESTransportClient{
     private final String strSource = "_source";
     private final int scrollTimeOut = 60000;
     private final String strClusterName = "trueno";
+    //private final String strClusterName = "wEbEiP_";
+
     private ElasticClient client;
     private JavaSparkContext jsc;
 
     /* Elastic Search Transport Client Class Constructor */
-    public ESTransportClient(String strIndex, JavaSparkContext psc) {
+    public ESTransportClient(String strIndex, String pstrhostname, Integer pintTransportPort){//}, JavaSparkContext psc) {
 
         index = strIndex;
 
         /* Instantiate the ElasticSearch client and connect to Server */
-        client = new ElasticClient(strClusterName, hostname);
+        client = new ElasticClient(strClusterName, pstrhostname, pintTransportPort);
         client.connect();
 
-        jsc = psc;
+        //jsc = psc;
 
         System.out.println("Connected to the Elastic Search Client ... ");
 
     }//Constructor
 
-    /* getVertexRDD JavaRDD */
-    public JavaRDD<Map<String,Long>> getVertexRDD() {
-
-        System.out.println("Retrieving vertices JavaRDD[Map<String,Long>]... ");
+    public ArrayList<Map<String,Long>> getVertexRDD(Integer id, Integer max) {
 
         QueryBuilder qbMatchAll = matchAllQuery();
+
+        /* start benchmark */
+        long startTime = System.currentTimeMillis();
 
         /* prepare search object */
         SearchObject objSearch = new SearchObject();
@@ -90,136 +92,185 @@ public class ESTransportClient{
                                     objSearch.setQuery(qbMatchAll.toString());
 
         /* get results */
-        ArrayList<Map<String,Long>> results = client.scroll(objSearch);
+        ArrayList<Map<String,Long>> results = client.scroll(objSearch,id,max);
 
-        System.out.println("Retrieved Vertices: [" + results.size() + "]");
+        long endTime = System.currentTimeMillis();
 
-        JavaRDD<Map<String,Long>> rddResults = jsc.parallelize(results);
 
-        return rddResults;
+        System.out.println("total results are " + results.size() + " | estimated time " + (endTime - startTime) + " ms");
+        return  results;
 
     }//getVertexRDD
 
-    /* getVertexRDD JavaRDD[Long] */
-    public JavaRDD<Long> getLongVertexRDD() {
-
-        //System.out.println("Retrieving vertices JavaRDD[Long] ... ");
+    public ArrayList<Map<String,Long>> getEdgeRDD(Integer id, Integer max) {
 
         QueryBuilder qbMatchAll = matchAllQuery();
+
+        /* start benchmark */
+        long startTime = System.currentTimeMillis();
 
         /* prepare search object */
         SearchObject objSearch = new SearchObject();
                                     objSearch.setIndex(index);
-                                    objSearch.setType(indexTypeVertex);
+                                    objSearch.setType(indexTypeEdge);
                                     objSearch.setSize(indexSize);
                                     objSearch.setQuery(qbMatchAll.toString());
 
         /* get results */
-        ArrayList<Long> results = client.scrollVertex(objSearch);
+        ArrayList<Map<String,Long>> results = client.scroll(objSearch,id,max);
 
-        //System.out.println("Retrieved Vertices [" + results.size() + "]");
+        long endTime = System.currentTimeMillis();
 
-        JavaRDD<Long> rddResults = jsc.parallelize(results);
+        System.out.println("total results are " + results.size() + " | estimated time " + (endTime - startTime) + " ms");
+        return  results;
 
-        return rddResults;
+    }//getVertexRDD
 
-    }//getVertexRDD JavaRDD[Long]
+    /* getVertexRDD JavaRDD */
+//    public JavaRDD<Map<String,Long>> getVertexRDD() {
+//
+//        System.out.println("Retrieving vertices JavaRDD[Map<String,Long>]... ");
+//
+//        QueryBuilder qbMatchAll = matchAllQuery();
+//
+//        /* prepare search object */
+//        SearchObject objSearch = new SearchObject();
+//                                    objSearch.setIndex(index);
+//                                    objSearch.setType(indexTypeVertex);
+//                                    objSearch.setSize(indexSize);
+//                                    objSearch.setQuery(qbMatchAll.toString());
+//
+//        /* get results */
+//        ArrayList<Map<String,Long>> results = client.scroll(objSearch);
+//
+//        System.out.println("Retrieved Vertices: [" + results.size() + "]");
+//
+//        JavaRDD<Map<String,Long>> rddResults = jsc.parallelize(results);
+//
+//        return rddResults;
+//
+//    }//getVertexRDD
+
+    /* getVertexRDD JavaRDD[Long] */
+//    public JavaRDD<Long> getLongVertexRDD() {
+//
+//        //System.out.println("Retrieving vertices JavaRDD[Long] ... ");
+//
+//        QueryBuilder qbMatchAll = matchAllQuery();
+//
+//        /* prepare search object */
+//        SearchObject objSearch = new SearchObject();
+//                                    objSearch.setIndex(index);
+//                                    objSearch.setType(indexTypeVertex);
+//                                    objSearch.setSize(indexSize);
+//                                    objSearch.setQuery(qbMatchAll.toString());
+//
+//        /* get results */
+//        ArrayList<Long> results = client.scrollVertex(objSearch);
+//
+//        //System.out.println("Retrieved Vertices [" + results.size() + "]");
+//
+//        JavaRDD<Long> rddResults = jsc.parallelize(results);
+//
+//        return rddResults;
+//
+//    }//getVertexRDD JavaRDD[Long]
 
     /* getVertexRDD ArrayList*/
-    public ArrayList<Map<String,Long>> getVertexArrayList() {
-
-        System.out.println("Retrieving vertices Array List ... ");
-
-        QueryBuilder qbMatchAll = matchAllQuery();
-
-        /* prepare search object */
-        SearchObject objSearch = new SearchObject();
-                                    objSearch.setIndex(index);
-                                    objSearch.setType(indexTypeVertex);
-                                    objSearch.setSize(indexSize);
-                                    objSearch.setQuery(qbMatchAll.toString());
-
-         /* get results */
-        ArrayList<Map<String,Long>> results = client.scroll(objSearch);
-
-        System.out.println("Retrieved Vertices: [" + results.size() + "]");
-
-        return results;
-
-    }//getVertexRDD ArrayList
+//    public ArrayList<Map<String,Long>> getVertexArrayList() {
+//
+//        System.out.println("Retrieving vertices Array List ... ");
+//
+//        QueryBuilder qbMatchAll = matchAllQuery();
+//
+//        /* prepare search object */
+//        SearchObject objSearch = new SearchObject();
+//                                    objSearch.setIndex(index);
+//                                    objSearch.setType(indexTypeVertex);
+//                                    objSearch.setSize(indexSize);
+//                                    objSearch.setQuery(qbMatchAll.toString());
+//
+//         /* get results */
+//        ArrayList<Map<String,Long>> results = client.scroll(objSearch);
+//
+//        System.out.println("Retrieved Vertices: [" + results.size() + "]");
+//
+//        return results;
+//
+//    }//getVertexRDD ArrayList
 
     /* getEdgeRDD JavaRDD */
-    public JavaRDD<Map<Long,Long>> getEdgeRDD() {
-
-        //System.out.println("Retrieving edges JavaRDD[Map<Long,Long>] ... ");
-
-        QueryBuilder qbMatchAll = matchAllQuery();
-
-        /* prepare search object */
-        SearchObject objSearch = new SearchObject();
-                                    objSearch.setIndex(index);
-                                    objSearch.setType(indexTypeEdge);
-                                    objSearch.setSize(indexSize);
-                                    objSearch.setQuery(qbMatchAll.toString());
-
-        /* get results */
-        ArrayList<Map<Long,Long>> results = client.scrollEdge(objSearch);
-
-        //System.out.println("Retrieved Edges: [" + results.size() + "]");
-
-        JavaRDD<Map<Long,Long>> rddResults = jsc.parallelize(results);
-
-        return rddResults;
-
-    }//getEdgeRDD
+//    public JavaRDD<Map<Long,Long>> getEdgeRDD() {
+//
+//        //System.out.println("Retrieving edges JavaRDD[Map<Long,Long>] ... ");
+//
+//        QueryBuilder qbMatchAll = matchAllQuery();
+//
+//        /* prepare search object */
+//        SearchObject objSearch = new SearchObject();
+//                                    objSearch.setIndex(index);
+//                                    objSearch.setType(indexTypeEdge);
+//                                    objSearch.setSize(indexSize);
+//                                    objSearch.setQuery(qbMatchAll.toString());
+//
+//        /* get results */
+//        ArrayList<Map<Long,Long>> results = client.scrollEdge(objSearch);
+//
+//        //System.out.println("Retrieved Edges: [" + results.size() + "]");
+//
+//        JavaRDD<Map<Long,Long>> rddResults = jsc.parallelize(results);
+//
+//        return rddResults;
+//
+//    }//getEdgeRDD
 
     /* getEdgeRDD JavaRDD[HashMap]*/
-    public JavaRDD<Map<Long,Long>> getEdgeRDDHashMap() {
-
-        System.out.println("Retrieving edges JavaRDD[Map<Long,Long>] ... ");
-
-        QueryBuilder qbMatchAll = matchAllQuery();
-
-        /* prepare search object */
-        SearchObject objSearch = new SearchObject();
-                                    objSearch.setIndex(index);
-                                    objSearch.setType(indexTypeEdge);
-                                    objSearch.setSize(indexSize);
-                                    objSearch.setQuery(qbMatchAll.toString());
-
-        /* get results */
-        Map<Long,Long> results = client.scrollEdgeHashMap(objSearch);
-
-        System.out.println("Retrieved Edges: [" + results.size() + "]");
-
-        JavaRDD<Map<Long,Long>> rddResults = jsc.parallelize(ImmutableList.of(results));
-
-        return rddResults;
-
-    }//getEdgeRDDHashMap
+//    public JavaRDD<Map<Long,Long>> getEdgeRDDHashMap() {
+//
+//        System.out.println("Retrieving edges JavaRDD[Map<Long,Long>] ... ");
+//
+//        QueryBuilder qbMatchAll = matchAllQuery();
+//
+//        /* prepare search object */
+//        SearchObject objSearch = new SearchObject();
+//                                    objSearch.setIndex(index);
+//                                    objSearch.setType(indexTypeEdge);
+//                                    objSearch.setSize(indexSize);
+//                                    objSearch.setQuery(qbMatchAll.toString());
+//
+//        /* get results */
+//        Map<Long,Long> results = client.scrollEdgeHashMap(objSearch);
+//
+//        System.out.println("Retrieved Edges: [" + results.size() + "]");
+//
+//        JavaRDD<Map<Long,Long>> rddResults = jsc.parallelize(ImmutableList.of(results));
+//
+//        return rddResults;
+//
+//    }//getEdgeRDDHashMap
 
     /* getEdgeRDD ArrayList*/
-    public ArrayList<Map<Long,Long>> alGetEdgeRDD() {
-
-        System.out.println("Retrieving edges ArrayList ... ");
-
-        QueryBuilder qbMatchAll = matchAllQuery();
-
-        /* prepare search object */
-        SearchObject objSearch = new SearchObject();
-                                    objSearch.setIndex(index);
-                                    objSearch.setType(indexTypeEdge);
-                                    objSearch.setSize(indexSize);
-                                    objSearch.setQuery(qbMatchAll.toString());
-
-        /* get results */
-        ArrayList<Map<Long,Long>> results = client.scrollEdge(objSearch);
-
-        System.out.println("Retrieved Edges: [" + results.size() + "]");
-
-        return results;
-
-    }//getEdgeRDD ArrayList
+//    public ArrayList<Map<Long,Long>> alGetEdgeRDD() {
+//
+//        System.out.println("Retrieving edges ArrayList ... ");
+//
+//        QueryBuilder qbMatchAll = matchAllQuery();
+//
+//        /* prepare search object */
+//        SearchObject objSearch = new SearchObject();
+//                                    objSearch.setIndex(index);
+//                                    objSearch.setType(indexTypeEdge);
+//                                    objSearch.setSize(indexSize);
+//                                    objSearch.setQuery(qbMatchAll.toString());
+//
+//        /* get results */
+//        ArrayList<Map<Long,Long>> results = client.scrollEdge(objSearch);
+//
+//        System.out.println("Retrieved Edges: [" + results.size() + "]");
+//
+//        return results;
+//
+//    }//getEdgeRDD ArrayList
 
     /**
      * TEST DATA ---------------------------------------------------------------------->

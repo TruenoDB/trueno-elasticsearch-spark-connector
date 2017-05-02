@@ -14,7 +14,7 @@
  */
 package org.trueno.elasticsearch.spark.connector;
 
-/* Inmutable Map and Lists */
+/* Immutable Map and Lists */
 import com.google.common.collect.ImmutableMap;
 
 /* ElasticSearch dependencies */
@@ -25,14 +25,16 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.transport.TransportClient;
+
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.slice.SliceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
-import org.elasticsearch.search.sort.SortParseElement;
 
 /* spark dependencies */
 import org.apache.spark.api.java.JavaRDD;
@@ -44,6 +46,7 @@ import java.net.InetSocketAddress;
 import java.io.PrintStream;
 import java.util.ArrayList;
 
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import scala.collection.mutable.Map;
 import scala.collection.mutable.HashMap;
 
@@ -51,6 +54,7 @@ import scala.collection.JavaConverters.*;
 import scala.collection.JavaConversions.*;
 
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.netlib.lapack.Slacon.i;
 
 public class ElasticClient {
 
@@ -58,8 +62,9 @@ public class ElasticClient {
     private TransportClient client;
     private String clusterName;
     private String[] addresses;
+    private Integer intTransportPort = 9300;
     private final int scrollTimeOut = 60000;
-    private final int hitsPerShard = 100;
+    private final int hitsPerShard = 1000;
     private final String strSource = "_source";
     private final String strId = "id";
     private final String strEdgeSource = "source";
@@ -70,10 +75,11 @@ public class ElasticClient {
      * @param clusterName -> String
      * @param addresses -> String
      */
-    public ElasticClient(String clusterName, String addresses) {
+    public ElasticClient(String clusterName, String addresses, Integer pintTransportPort) {
         /* set cluster name and addresses */
         this.clusterName = clusterName;
         this.addresses = addresses.split(",");
+        intTransportPort = pintTransportPort;
     }
 
     /**
@@ -83,16 +89,19 @@ public class ElasticClient {
 
         try{
             /* prepare cluster settings */
-            Settings settings = Settings.settingsBuilder()
-                    .put("cluster.name", this.clusterName)
+            Settings settings = Settings.builder()
+                    .put("cluster.name", clusterName)
                     .build();
 
             /* instantiate transport build */
-            this.client = TransportClient.builder().settings(settings).build();
+            //this.client = TransportClient.builder().settings(settings).build();
+
+            this.client = (new PreBuiltTransportClient(settings));
 
             /* set addresses */
-            for(String addr: this.addresses){
-                this.client.addTransportAddress(new InetSocketTransportAddress(new InetSocketAddress( InetAddress.getByName(addr), 9300)));
+            for(String addr: addresses){
+                this.client.addTransportAddress(new InetSocketTransportAddress(
+                            new InetSocketAddress( InetAddress.getByName(addr), intTransportPort )));
             }
 
         }catch (Exception e){
@@ -226,97 +235,53 @@ public class ElasticClient {
      * @param data -> SearchObject
      * @return results -> ArrayList
      */
-    public ArrayList<Map<String,Long>> scroll(SearchObject data) {
+    public ArrayList<Map<String,Long>> scroll(SearchObject data, Integer id, Integer max) {
 
         TimeValue tvScrollTime  = new TimeValue(this.scrollTimeOut);
 
         boolean boolJustOnce = true;
+        Integer intCount = 0;
 
         /* collect results in array */
         ArrayList<Map<String,Long>> sparkSources = new ArrayList<>();
 
+        ArrayList<Map<String,Object>> sources = new ArrayList<>();
+
         // .setFetchSource(new String[]{strFields}, null)
         System.out.println("Index " + data.getIndex());
 
-        SearchResponse scrollResp = this.client.prepareSearch(data.getIndex())
-                .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
-                .setScroll(tvScrollTime)
-                .setFetchSource(new String[]{strId}, null)
-                .setQuery(data.getQuery())
-                .setSize(this.hitsPerShard).execute().actionGet(); //n hits per shard will be returned for each scroll
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.size(Integer.MAX_VALUE);
+        searchSourceBuilder.query(QueryBuilders.matchAllQuery());
+        searchSourceBuilder.slice(new SliceBuilder(id, max));
 
-        //Scroll until no hits are returned
+        //.setFetchSource(new String[]{strId}, null)
+
+        SearchResponse scrollResp = client.prepareSearch(data.getIndex())
+                                    .setSource(searchSourceBuilder)
+                                    .setTypes(data.getType())
+                                    .setScroll(tvScrollTime)
+                                    .setSize(hitsPerShard).execute().actionGet(); //n hits per shard will be returned for each scroll
+
+        // Scroll until no hits are returned
         while (true) {
 
             for (SearchHit hit : scrollResp.getHits().getHits()) {
+
+                intCount++;
                 //hit returned
                 if (boolJustOnce) {
                     boolJustOnce = false;
                     System.out.println(hit.getSource());
                 }
 
-                    Long lngId = getFromSource(hit.getSource(), strId);
-                    if (lngId != null) {
-                        Map<String, Long> hmVertex = new HashMap<String, Long>();
-                        hmVertex.put(strId,lngId);
-                        sparkSources.add(hmVertex);
-                    }
-
-                }//for
-
-                scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(tvScrollTime).execute().actionGet();
-
-                //Break condition: No hits are returned
-                if (scrollResp.getHits().getHits().length == 0) {
-                    return sparkSources;//.toArray(new Map[sparkSources.size()]);
-                }
-
-        }//while
-
-    }//scroll
-
-    /**
-     * The Scroll API allows you to execute a search query and get back search hits that match the query.
-     * The query can either be provided using a simple query string as a parameter, or using a request body
-     * @param data -> SearchObject
-     * @return results -> ArrayList
-     */
-    public ArrayList<Long> scrollVertex(SearchObject data) {
-
-        TimeValue tvScrollTime  = new TimeValue(this.scrollTimeOut);
-
-        boolean boolJustOnce = true;
-
-        /* collect results in array */
-        ArrayList<Long> sparkSources = new ArrayList<>();
-
-        // .setFetchSource(new String[]{strFields}, null)
-        //System.out.println("Index " + data.getIndex() + " type " + data.getType());
-
-        //.setFetchSource(new String[]{strId}, null)
-        //.setQuery(data.getQuery())
-        //after scroll
-
-        SearchResponse scrollResp = this.client.prepareSearch(data.getIndex())
-                .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
-                .setTypes(data.getType())
-                .setScroll(tvScrollTime)
-                .setQuery(data.getQuery())
-                .setSize(this.hitsPerShard).execute().actionGet(); //n hits per shard will be returned for each scroll
-
-        //Scroll until no hits are returned
-        while (true) {
-
-            for (SearchHit hit : scrollResp.getHits().getHits()) {
-                //hit returned
-                if(boolJustOnce) {
-                    boolJustOnce = false;
-                    //System.out.println(hit.getSource());
-                }
+                //sources.add(ImmutableMap.of(strSource,hit.getSource()));
 
                 Long lngId = getFromSource(hit.getSource(), strId);
                 if (lngId != null) {
-                    sparkSources.add(lngId);
+                    Map<String, Long> hmVertex = new HashMap<String, Long>();
+                    hmVertex.put(strId,lngId);
+                    sparkSources.add(hmVertex);
                 }
 
             }//for
@@ -325,8 +290,10 @@ public class ElasticClient {
 
             //Break condition: No hits are returned
             if (scrollResp.getHits().getHits().length == 0) {
-                return sparkSources;
+                System.out.println("Results count " + intCount);
+                return sparkSources;//.toArray(new Map[sparkSources.size()]);
             }
+
         }//while
 
     }//scroll
@@ -337,54 +304,110 @@ public class ElasticClient {
      * @param data -> SearchObject
      * @return results -> ArrayList
      */
-    public ArrayList<Map<Long,Long>> scrollEdge(SearchObject data) {
-
-        TimeValue tvScrollTime  = new TimeValue(scrollTimeOut);
-
-        boolean boolJustOnce = true;
-
-        /* collect results in array */
-        ArrayList<Map<Long,Long>> sparkSources = new ArrayList<>();
-
-        //  .setFetchSource(new String[]{strEdgeSource,strEdgeTarget}, null)
-        SearchResponse scrollResp = this.client.prepareSearch(data.getIndex())
-                .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
-                .setTypes(data.getType())
-                .setScroll(tvScrollTime)
-                .setQuery(QueryBuilders.wrapperQuery(data.getQuery()))
-                .setSize(hitsPerShard).execute().actionGet(); //n hits per shard will be returned for each scroll
-
-        //Scroll until no hits are returned
-        while (true) {
-
-            for (SearchHit hit : scrollResp.getHits().getHits()) {
-                //hit returned
-                if(boolJustOnce) {
-                    boolJustOnce = false;
-                    //System.out.println(hit.getSource());
-                }
-
-                Long lngSource = getFromSource(hit.getSource(), strEdgeSource);
-                Long lngTarget = getFromSource(hit.getSource(), strEdgeTarget);
-
-                Map<Long, Long> hmEdge = new HashMap<Long, Long>();
-
-                if (lngSource != null && lngTarget != null) {
-                    hmEdge.put(lngSource,lngTarget);
-                    sparkSources.add(hmEdge);
-                }
-
-            }//for
-
-            scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(tvScrollTime).execute().actionGet();
-
-            //Break condition: No hits are returned
-            if (scrollResp.getHits().getHits().length == 0) {
-                return sparkSources;
-            }
-        }//while
-
-    }//scroll
+//    public ArrayList<Long> scrollVertex(SearchObject data) {
+//
+//        TimeValue tvScrollTime  = new TimeValue(this.scrollTimeOut);
+//
+//        boolean boolJustOnce = true;
+//
+//        /* collect results in array */
+//        ArrayList<Long> sparkSources = new ArrayList<>();
+//
+//        // .setFetchSource(new String[]{strFields}, null)
+//        //System.out.println("Index " + data.getIndex() + " type " + data.getType());
+//
+//        //.setFetchSource(new String[]{strId}, null)
+//        //.setQuery(data.getQuery())
+//        //after scroll
+//
+//        SearchResponse scrollResp = this.client.prepareSearch(data.getIndex())
+//                .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
+//                .setTypes(data.getType())
+//                .setScroll(tvScrollTime)
+//                .setQuery(data.getQuery())
+//                .setSize(this.hitsPerShard).execute().actionGet(); //n hits per shard will be returned for each scroll
+//
+//        //Scroll until no hits are returned
+//        while (true) {
+//
+//            for (SearchHit hit : scrollResp.getHits().getHits()) {
+//                //hit returned
+//                if(boolJustOnce) {
+//                    boolJustOnce = false;
+//                    //System.out.println(hit.getSource());
+//                }
+//
+//                Long lngId = getFromSource(hit.getSource(), strId);
+//                if (lngId != null) {
+//                    sparkSources.add(lngId);
+//                }
+//
+//            }//for
+//
+//            scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(tvScrollTime).execute().actionGet();
+//
+//            //Break condition: No hits are returned
+//            if (scrollResp.getHits().getHits().length == 0) {
+//                return sparkSources;
+//            }
+//        }//while
+//
+//    }//scroll
+//
+//    /**
+//     * The Scroll API allows you to execute a search query and get back search hits that match the query.
+//     * The query can either be provided using a simple query string as a parameter, or using a request body
+//     * @param data -> SearchObject
+//     * @return results -> ArrayList
+//     */
+//    public ArrayList<Map<Long,Long>> scrollEdge(SearchObject data) {
+//
+//        TimeValue tvScrollTime  = new TimeValue(scrollTimeOut);
+//
+//        boolean boolJustOnce = true;
+//
+//        /* collect results in array */
+//        ArrayList<Map<Long,Long>> sparkSources = new ArrayList<>();
+//
+//        //  .setFetchSource(new String[]{strEdgeSource,strEdgeTarget}, null)
+//        SearchResponse scrollResp = this.client.prepareSearch(data.getIndex())
+//                .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
+//                .setTypes(data.getType())
+//                .setScroll(tvScrollTime)
+//                .setQuery(QueryBuilders.wrapperQuery(data.getQuery()))
+//                .setSize(hitsPerShard).execute().actionGet(); //n hits per shard will be returned for each scroll
+//
+//        //Scroll until no hits are returned
+//        while (true) {
+//
+//            for (SearchHit hit : scrollResp.getHits().getHits()) {
+//                //hit returned
+//                if(boolJustOnce) {
+//                    boolJustOnce = false;
+//                    //System.out.println(hit.getSource());
+//                }
+//
+//                Long lngSource = getFromSource(hit.getSource(), strEdgeSource);
+//                Long lngTarget = getFromSource(hit.getSource(), strEdgeTarget);
+//
+//                Map<Long, Long> hmEdge = new HashMap<Long, Long>();
+//
+//                if (lngSource != null && lngTarget != null) {
+//                    hmEdge.put(lngSource,lngTarget);
+//                    sparkSources.add(hmEdge);
+//                }
+//
+//            }//for
+//
+//            scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(tvScrollTime).execute().actionGet();
+//
+//            //Break condition: No hits are returned
+//            if (scrollResp.getHits().getHits().length == 0) {
+//                return sparkSources;
+//            }
+//        }//while
+//
+//    }//scroll
 
     /**
      * The Scroll API allows you to execute a search query and get back search hits that match the query.
@@ -392,55 +415,55 @@ public class ElasticClient {
      * @param data -> SearchObject
      * @return results -> ArrayList
      */
-    public Map<Long,Long> scrollEdgeHashMap(SearchObject data) {
-
-        TimeValue tvScrollTime  = new TimeValue(scrollTimeOut);
-
-        boolean boolJustOnce = true;
-
-        /* collect results in array */
-        ArrayList<Map<Long,Long>> sparkSources = new ArrayList<>();
-
-        Map<Long, Long> hmEdge = new HashMap<Long, Long>();
-
-        // .setFetchSource(new String[]{strFields}, null)
-        //  .setFetchSource(new String[]{strEdgeSource,strEdgeTarget}, null)
-        SearchResponse scrollResp = this.client.prepareSearch(data.getIndex())
-                .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
-                .setTypes(data.getType())
-                .setScroll(tvScrollTime)
-                .setQuery(data.getQuery())
-                .setSize(hitsPerShard).execute().actionGet(); //n hits per shard will be returned for each scroll
-
-        //Scroll until no hits are returned
-        while (true) {
-
-            for (SearchHit hit : scrollResp.getHits().getHits()) {
-                //hit returned
-                if(boolJustOnce) {
-                    boolJustOnce = false;
-                    System.out.println(hit);
-                }
-
-                Long lngSource = getFromSource(hit.getSource(), strEdgeSource);
-                Long lngTarget = getFromSource(hit.getSource(), strEdgeTarget);
-
-                if (lngSource != null && lngTarget != null) {
-                    hmEdge.put(lngSource,lngTarget);
-                    sparkSources.add(hmEdge);
-                }
-
-            }//for
-
-            scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(tvScrollTime).execute().actionGet();
-
-            //Break condition: No hits are returned
-            if (scrollResp.getHits().getHits().length == 0) {
-                return hmEdge;
-            }
-        }//while
-
-    }//scroll
+//    public Map<Long,Long> scrollEdgeHashMap(SearchObject data) {
+//
+//        TimeValue tvScrollTime  = new TimeValue(scrollTimeOut);
+//
+//        boolean boolJustOnce = true;
+//
+//        /* collect results in array */
+//        ArrayList<Map<Long,Long>> sparkSources = new ArrayList<>();
+//
+//        Map<Long, Long> hmEdge = new HashMap<Long, Long>();
+//
+//        // .setFetchSource(new String[]{strFields}, null)
+//        //  .setFetchSource(new String[]{strEdgeSource,strEdgeTarget}, null)
+//        SearchResponse scrollResp = this.client.prepareSearch(data.getIndex())
+//                .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
+//                .setTypes(data.getType())
+//                .setScroll(tvScrollTime)
+//                .setQuery(data.getQuery())
+//                .setSize(hitsPerShard).execute().actionGet(); //n hits per shard will be returned for each scroll
+//
+//        //Scroll until no hits are returned
+//        while (true) {
+//
+//            for (SearchHit hit : scrollResp.getHits().getHits()) {
+//                //hit returned
+//                if(boolJustOnce) {
+//                    boolJustOnce = false;
+//                    System.out.println(hit);
+//                }
+//
+//                Long lngSource = getFromSource(hit.getSource(), strEdgeSource);
+//                Long lngTarget = getFromSource(hit.getSource(), strEdgeTarget);
+//
+//                if (lngSource != null && lngTarget != null) {
+//                    hmEdge.put(lngSource,lngTarget);
+//                    sparkSources.add(hmEdge);
+//                }
+//
+//            }//for
+//
+//            scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(tvScrollTime).execute().actionGet();
+//
+//            //Break condition: No hits are returned
+//            if (scrollResp.getHits().getHits().length == 0) {
+//                return hmEdge;
+//            }
+//        }//while
+//
+//    }//scroll
 
     /**
      * The search API allows you to execute a search query and get back search hits that match the query.
@@ -449,22 +472,22 @@ public class ElasticClient {
      * @param data -> SearchObject
      * @return results -> promise
      */
-    public ListenableActionFuture<SearchResponse> lafScroll(SearchObject data) {
-
-        /* collecting results */
-        TimeValue tvScrollTime  = new TimeValue(scrollTimeOut);
-
-        //.addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
-        ListenableActionFuture<SearchResponse> scrollResponse = this.client.prepareSearch(data.getIndex())
-                .setTypes(data.getType())
-                .setScroll(tvScrollTime)
-                .setQuery(data.getQuery())
-                .setSize(this.hitsPerShard).execute(); //100 hits per shard will be returned for each scroll
-
-
-        return scrollResponse;
-
-    }//lafScroll
+//    public ListenableActionFuture<SearchResponse> lafScroll(SearchObject data) {
+//
+//        /* collecting results */
+//        TimeValue tvScrollTime  = new TimeValue(scrollTimeOut);
+//
+//        //.addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
+//        ListenableActionFuture<SearchResponse> scrollResponse = this.client.prepareSearch(data.getIndex())
+//                .setTypes(data.getType())
+//                .setScroll(tvScrollTime)
+//                .setQuery(data.getQuery())
+//                .setSize(this.hitsPerShard).execute(); //100 hits per shard will be returned for each scroll
+//
+//
+//        return scrollResponse;
+//
+//    }//lafScroll
 
 }//class
 

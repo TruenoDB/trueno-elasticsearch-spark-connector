@@ -35,8 +35,8 @@ import org.trueno.elasticsearch.spark.connector.Vertex;
 public class ScrollTest {
 
     private static String hostname = "localhost";
-    private static String index = "movies";
-    private static String indexType = "v";
+    private static String index = "test_scroll";
+    private static String indexType = "test_type";
     private static Integer indexSize = 6000;
 
     public ScrollTest(){
@@ -52,15 +52,12 @@ public class ScrollTest {
 
         /* prepare search object */
         SearchObject objSearch = new SearchObject();
-        objSearch.setIndex(index);
-        objSearch.setType(indexType);
-        objSearch.setSize(indexSize);
-        objSearch.setQuery(qbMatchAll.toString());
+                    objSearch.setIndex(index);
+                    objSearch.setType(indexType);
+                    objSearch.setSize(indexSize);
+                    objSearch.setQuery(qbMatchAll.toString());
 
-        /* get results */
-        //Map<String,Long>[] results = client.scroll(objSearch);
-        //ArrayList<Long> results = client.scroll(objSearch);
-        ArrayList<Map<String,Long>> results = client.scroll(objSearch);
+        ArrayList<Map<String,Long>> results = client.scroll(objSearch,0,2);
 
         HashMap<String, Object> r1;
 
