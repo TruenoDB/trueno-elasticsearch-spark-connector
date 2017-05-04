@@ -43,7 +43,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import scala.collection.JavaConverters.*;
 
-/* Inmutable Map and Lists */
+/* Immutable Map and Lists */
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableList;
 
@@ -57,32 +57,42 @@ public class ESTransportClient{
     private final String strSource = "_source";
     private final int scrollTimeOut = 60000;
     private final String strClusterName = "trueno";
-    //private final String strClusterName = "wEbEiP_";
 
     private ElasticClient client;
     private JavaSparkContext jsc;
 
-    /* Elastic Search Transport Client Class Constructor */
-    public ESTransportClient(String strIndex, String pstrhostname, Integer pintTransportPort){//}, JavaSparkContext psc) {
+    /**
+     * Elastic Search Transport Client Class Constructor
+     * @param strIndex -> ElasticSearch Index -> String
+     * @param pstrHostname -> ElasticSearch Master Node IP Address -> String
+     * @param pintTransportPort -> ElasticSearch Master Node Port -> Integer
+     */
+    public ESTransportClient(String strIndex, String pstrHostname, Integer pintTransportPort){
 
         index = strIndex;
 
-        /* Instantiate the ElasticSearch client and connect to Server */
-        client = new ElasticClient(strClusterName, pstrhostname, pintTransportPort);
+        /* Instantiate the ElasticSearch client */
+        client = new ElasticClient(strClusterName, pstrHostname, pintTransportPort);
+
+        /* Connect to Server */
         client.connect();
 
-        //jsc = psc;
-
-        System.out.println("Connected to the Elastic Search Client ... ");
+        System.out.println("[ElasticSearch Cluster] -> [Client connected]");
 
     }//Constructor
 
+    /**
+     * Get Vertices from index using scrolling
+     * @param id -> identifier of the slice to be read
+     * @param max -> maximum number of slices in the scroll call
+     * @return ArrayList of Vertices
+     */
     public ArrayList<Map<String,Long>> getVertexRDD(Integer id, Integer max) {
 
         QueryBuilder qbMatchAll = matchAllQuery();
 
         /* start benchmark */
-        long startTime = System.currentTimeMillis();
+        //long startTime = System.currentTimeMillis();
 
         /* prepare search object */
         SearchObject objSearch = new SearchObject();
@@ -94,20 +104,27 @@ public class ESTransportClient{
         /* get results */
         ArrayList<Map<String,Long>> results = client.scroll(objSearch,id,max);
 
-        long endTime = System.currentTimeMillis();
+        //long endTime = System.currentTimeMillis();
 
+        //System.out.println("total results are " + results.size() + " | estimated time " + (endTime - startTime) + " ms");
 
-        System.out.println("total results are " + results.size() + " | estimated time " + (endTime - startTime) + " ms");
         return  results;
 
     }//getVertexRDD
 
+
+    /**
+     * Get Edges from index using scrolling
+     * @param id -> identifier of the slice to be read
+     * @param max -> maximum number of slices in the scroll call
+     * @return ArrayList of Edges
+     */
     public ArrayList<Map<Long,Long>> getEdgeRDD(Integer id, Integer max) {
 
         QueryBuilder qbMatchAll = matchAllQuery();
 
         /* start benchmark */
-        long startTime = System.currentTimeMillis();
+        //long startTime = System.currentTimeMillis();
 
         /* prepare search object */
         SearchObject objSearch = new SearchObject();
@@ -120,9 +137,9 @@ public class ESTransportClient{
         //ArrayList<Map<String,Long>> results = client.scrollEdge(objSearch,id,max);
         ArrayList<Map<Long,Long>> results = client.scrollEdge(objSearch,id,max);
 
-        long endTime = System.currentTimeMillis();
+        //long endTime = System.currentTimeMillis();
 
-        System.out.println("total results are " + results.size() + " | estimated time " + (endTime - startTime) + " ms");
+        //System.out.println("total results are " + results.size() + " | estimated time " + (endTime - startTime) + " ms");
 
         return  results;
 

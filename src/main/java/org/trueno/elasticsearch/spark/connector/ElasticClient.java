@@ -68,7 +68,7 @@ public class ElasticClient {
     }
 
     /**
-     * connect to elasticsearch using transport client
+     * Connect to elasticsearch using transport client
      */
     public void connect() {
 
@@ -178,6 +178,8 @@ public class ElasticClient {
      * The Scroll API allows you to execute a search query and get back search hits that match the query.
      * The query can either be provided using a simple query string as a parameter, or using a request body
      * @param data -> SearchObject
+     * @param id -> identifier of the slice to be read
+     * @param max -> maximum number of slices in the scroll call
      * @return results -> ArrayList
      */
     public ArrayList<Map<String,Long>> scroll(SearchObject data, Integer id, Integer max) {
@@ -215,10 +217,10 @@ public class ElasticClient {
 
                 intCount++;
                 //hit returned
-                if (boolJustOnce) {
-                    boolJustOnce = false;
-                    System.out.println(hit.getSource());
-                }
+//                if (boolJustOnce) {
+//                    boolJustOnce = false;
+//                    System.out.println(hit.getSource());
+//                }
 
                 //sources.add(ImmutableMap.of(strSource,hit.getSource()));
 
@@ -235,7 +237,7 @@ public class ElasticClient {
 
             //Break condition: No hits are returned
             if (scrollResp.getHits().getHits().length == 0) {
-                System.out.println("Results count " + intCount);
+                //System.out.println("Results count " + intCount);
                 return sparkSources;//.toArray(new Map[sparkSources.size()]);
             }
 
@@ -247,6 +249,8 @@ public class ElasticClient {
      * The Scroll API allows you to execute a search query and get back search hits that match the query.
      * The query can either be provided using a simple query string as a parameter, or using a request body
      * @param data -> SearchObject
+     * @param id -> identifier of the slice to be read
+     * @param max -> maximum number of slices in the scroll call
      * @return results -> ArrayList
      */
     public ArrayList<Map<Long,Long>> scrollEdge(SearchObject data, Integer id, Integer max) {
@@ -275,10 +279,10 @@ public class ElasticClient {
             for (SearchHit hit : scrollResp.getHits().getHits()) {
 
                 //hit returned
-                if(boolJustOnce) {
-                    boolJustOnce = false;
-                    System.out.println(hit.getSource());
-                }
+//                if(boolJustOnce) {
+//                    boolJustOnce = false;
+//                    System.out.println(hit.getSource());
+//                }
 
                 Long lngSource = getFromSource(hit.getSource(), strEdgeSource);
                 Long lngTarget = getFromSource(hit.getSource(), strEdgeTarget);
