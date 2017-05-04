@@ -102,7 +102,7 @@ public class ESTransportClient{
 
     }//getVertexRDD
 
-    public ArrayList<Map<String,Long>> getEdgeRDD(Integer id, Integer max) {
+    public ArrayList<Map<Long,Long>> getEdgeRDD(Integer id, Integer max) {
 
         QueryBuilder qbMatchAll = matchAllQuery();
 
@@ -117,14 +117,16 @@ public class ESTransportClient{
                                     objSearch.setQuery(qbMatchAll.toString());
 
         /* get results */
-        ArrayList<Map<String,Long>> results = client.scroll(objSearch,id,max);
+        //ArrayList<Map<String,Long>> results = client.scrollEdge(objSearch,id,max);
+        ArrayList<Map<Long,Long>> results = client.scrollEdge(objSearch,id,max);
 
         long endTime = System.currentTimeMillis();
 
         System.out.println("total results are " + results.size() + " | estimated time " + (endTime - startTime) + " ms");
+
         return  results;
 
-    }//getVertexRDD
+    }//getEdgesRDD
 
     /* getVertexRDD JavaRDD */
 //    public JavaRDD<Map<String,Long>> getVertexRDD() {
