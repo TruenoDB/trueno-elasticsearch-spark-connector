@@ -14,32 +14,21 @@
  */
 package org.trueno.elasticsearch.spark.connector;
 
-/* Immutable Map and Lists */
-import com.google.common.collect.ImmutableMap;
-
 /* ElasticSearch dependencies */
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.ListenableActionFuture;
-import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.transport.TransportClient;
 
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.slice.SliceBuilder;
-import org.elasticsearch.search.sort.SortOrder;
 
 /* spark dependencies */
-import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.rdd.RDD;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -50,11 +39,6 @@ import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import scala.collection.mutable.Map;
 import scala.collection.mutable.HashMap;
 
-import scala.collection.JavaConverters.*;
-import scala.collection.JavaConversions.*;
-
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.netlib.lapack.Slacon.i;
 
 public class ElasticClient {
 
@@ -108,46 +92,6 @@ public class ElasticClient {
             System.out.println(e);
         }
     }
-
-    /**
-     * The search API allows you to execute a search query and get back search hits that match the query.
-     * The query can either be provided using a simple query string as a parameter, or using a request body
-     * @param data -> SearchObject
-     * @return results -> ArrayList
-     */
-//    public Map<String,Object>[] search(SearchObject data) {
-//
-//        /* collecting results */
-//        ArrayList<Map<String,Object>> sources = new ArrayList<>();
-//
-//        try{
-//
-//            SearchRequestBuilder srBuilder = this.client.prepareSearch(data.getIndex())
-//                    .setTypes(data.getType())
-//                    .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
-//                    .setSize(data.getSize())
-//                    .setQuery(QueryBuilders.wrapperQuery(data.getQuery()));
-//
-//            SearchResponse resp = srBuilder.get();
-//
-//            SearchHit[] results = resp.getHits().getHits();
-//
-//            //System.out.println("Hits are " + results.length);
-//
-//            /* for each hit result */
-//            for(SearchHit hit: results){
-//
-//                /* add map to array, note: a map is the equivalent of a JSON object */
-//                sources.add(ImmutableMap.of(this.strSource, hit.getSource()));
-//            }
-//
-//            return sources.toArray(new Map[sources.size()]);
-//
-//        }catch (Exception e){
-//            System.out.println(e);
-//        }
-//        return new Map[0];
-//    }
 
     /**
      * The bulk API allows one to index and delete several documents in a single request.
@@ -298,61 +242,6 @@ public class ElasticClient {
 
     }//scroll
 
-    /**
-     * The Scroll API allows you to execute a search query and get back search hits that match the query.
-     * The query can either be provided using a simple query string as a parameter, or using a request body
-     * @param data -> SearchObject
-     * @return results -> ArrayList
-     */
-//    public ArrayList<Long> scrollVertex(SearchObject data) {
-//
-//        TimeValue tvScrollTime  = new TimeValue(this.scrollTimeOut);
-//
-//        boolean boolJustOnce = true;
-//
-//        /* collect results in array */
-//        ArrayList<Long> sparkSources = new ArrayList<>();
-//
-//        // .setFetchSource(new String[]{strFields}, null)
-//        //System.out.println("Index " + data.getIndex() + " type " + data.getType());
-//
-//        //.setFetchSource(new String[]{strId}, null)
-//        //.setQuery(data.getQuery())
-//        //after scroll
-//
-//        SearchResponse scrollResp = this.client.prepareSearch(data.getIndex())
-//                .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
-//                .setTypes(data.getType())
-//                .setScroll(tvScrollTime)
-//                .setQuery(data.getQuery())
-//                .setSize(this.hitsPerShard).execute().actionGet(); //n hits per shard will be returned for each scroll
-//
-//        //Scroll until no hits are returned
-//        while (true) {
-//
-//            for (SearchHit hit : scrollResp.getHits().getHits()) {
-//                //hit returned
-//                if(boolJustOnce) {
-//                    boolJustOnce = false;
-//                    //System.out.println(hit.getSource());
-//                }
-//
-//                Long lngId = getFromSource(hit.getSource(), strId);
-//                if (lngId != null) {
-//                    sparkSources.add(lngId);
-//                }
-//
-//            }//for
-//
-//            scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(tvScrollTime).execute().actionGet();
-//
-//            //Break condition: No hits are returned
-//            if (scrollResp.getHits().getHits().length == 0) {
-//                return sparkSources;
-//            }
-//        }//while
-//
-//    }//scroll
 //
 //    /**
 //     * The Scroll API allows you to execute a search query and get back search hits that match the query.
@@ -409,85 +298,7 @@ public class ElasticClient {
 //
 //    }//scroll
 
-    /**
-     * The Scroll API allows you to execute a search query and get back search hits that match the query.
-     * The query can either be provided using a simple query string as a parameter, or using a request body
-     * @param data -> SearchObject
-     * @return results -> ArrayList
-     */
-//    public Map<Long,Long> scrollEdgeHashMap(SearchObject data) {
-//
-//        TimeValue tvScrollTime  = new TimeValue(scrollTimeOut);
-//
-//        boolean boolJustOnce = true;
-//
-//        /* collect results in array */
-//        ArrayList<Map<Long,Long>> sparkSources = new ArrayList<>();
-//
-//        Map<Long, Long> hmEdge = new HashMap<Long, Long>();
-//
-//        // .setFetchSource(new String[]{strFields}, null)
-//        //  .setFetchSource(new String[]{strEdgeSource,strEdgeTarget}, null)
-//        SearchResponse scrollResp = this.client.prepareSearch(data.getIndex())
-//                .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
-//                .setTypes(data.getType())
-//                .setScroll(tvScrollTime)
-//                .setQuery(data.getQuery())
-//                .setSize(hitsPerShard).execute().actionGet(); //n hits per shard will be returned for each scroll
-//
-//        //Scroll until no hits are returned
-//        while (true) {
-//
-//            for (SearchHit hit : scrollResp.getHits().getHits()) {
-//                //hit returned
-//                if(boolJustOnce) {
-//                    boolJustOnce = false;
-//                    System.out.println(hit);
-//                }
-//
-//                Long lngSource = getFromSource(hit.getSource(), strEdgeSource);
-//                Long lngTarget = getFromSource(hit.getSource(), strEdgeTarget);
-//
-//                if (lngSource != null && lngTarget != null) {
-//                    hmEdge.put(lngSource,lngTarget);
-//                    sparkSources.add(hmEdge);
-//                }
-//
-//            }//for
-//
-//            scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(tvScrollTime).execute().actionGet();
-//
-//            //Break condition: No hits are returned
-//            if (scrollResp.getHits().getHits().length == 0) {
-//                return hmEdge;
-//            }
-//        }//while
-//
-//    }//scroll
 
-    /**
-     * The search API allows you to execute a search query and get back search hits that match the query.
-     * The query can either be provided using a simple query string as a parameter, or using a request body
-     * addListener() Add an action listener to be invoked when a response has received.
-     * @param data -> SearchObject
-     * @return results -> promise
-     */
-//    public ListenableActionFuture<SearchResponse> lafScroll(SearchObject data) {
-//
-//        /* collecting results */
-//        TimeValue tvScrollTime  = new TimeValue(scrollTimeOut);
-//
-//        //.addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
-//        ListenableActionFuture<SearchResponse> scrollResponse = this.client.prepareSearch(data.getIndex())
-//                .setTypes(data.getType())
-//                .setScroll(tvScrollTime)
-//                .setQuery(data.getQuery())
-//                .setSize(this.hitsPerShard).execute(); //100 hits per shard will be returned for each scroll
-//
-//
-//        return scrollResponse;
-//
-//    }//lafScroll
 
 }//class
 

@@ -44,9 +44,6 @@
     <orderEntry type="library" name="Maven: com.tdunning:t-digest:3.0" level="project" />
     <orderEntry type="library" name="Maven: org.hdrhistogram:HdrHistogram:2.1.6" level="project" />
     <orderEntry type="library" name="Maven: net.java.dev.jna:jna:4.2.2" level="project" />
-    <orderEntry type="library" name="Maven: org.elasticsearch.plugin:transport-netty3-client:5.3.1" level="project" />
-    <orderEntry type="library" name="Maven: io.netty:netty:3.10.6.Final" level="project" />
-    <orderEntry type="library" name="Maven: org.elasticsearch.client:transport:5.3.1" level="project" />
     <orderEntry type="library" name="Maven: org.elasticsearch.plugin:transport-netty4-client:5.3.1" level="project" />
     <orderEntry type="library" name="Maven: io.netty:netty-buffer:4.1.7.Final" level="project" />
     <orderEntry type="library" name="Maven: io.netty:netty-codec:4.1.7.Final" level="project" />
@@ -55,6 +52,8 @@
     <orderEntry type="library" name="Maven: io.netty:netty-handler:4.1.7.Final" level="project" />
     <orderEntry type="library" name="Maven: io.netty:netty-resolver:4.1.7.Final" level="project" />
     <orderEntry type="library" name="Maven: io.netty:netty-transport:4.1.7.Final" level="project" />
+    <orderEntry type="library" name="Maven: org.elasticsearch.client:transport:5.3.1" level="project" />
+    <orderEntry type="library" name="Maven: org.elasticsearch.plugin:transport-netty3-client:5.3.1" level="project" />
     <orderEntry type="library" name="Maven: org.elasticsearch.plugin:reindex-client:5.3.1" level="project" />
     <orderEntry type="library" name="Maven: org.elasticsearch.client:rest:5.3.1" level="project" />
     <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpclient:4.5.2" level="project" />
@@ -162,6 +161,7 @@
     <orderEntry type="library" name="Maven: org.glassfish.jersey.containers:jersey-container-servlet:2.22.2" level="project" />
     <orderEntry type="library" name="Maven: org.glassfish.jersey.containers:jersey-container-servlet-core:2.22.2" level="project" />
     <orderEntry type="library" name="Maven: io.netty:netty-all:4.0.42.Final" level="project" />
+    <orderEntry type="library" name="Maven: io.netty:netty:3.8.0.Final" level="project" />
     <orderEntry type="library" name="Maven: com.clearspring.analytics:stream:2.7.0" level="project" />
     <orderEntry type="library" name="Maven: io.dropwizard.metrics:metrics-core:3.1.2" level="project" />
     <orderEntry type="library" name="Maven: io.dropwizard.metrics:metrics-jvm:3.1.2" level="project" />
@@ -191,7 +191,5 @@
     <orderEntry type="library" name="Maven: com.chuusai:shapeless_2.10.4:2.0.0" level="project" />
     <orderEntry type="library" name="Maven: com.github.fommil.netlib:core:1.1.2" level="project" />
     <orderEntry type="library" name="Maven: net.sourceforge.f2j:arpack_combined_all:0.1" level="project" />
-    <orderEntry type="library" name="Maven: com.whalin:Memcached-Java-Client:3.0.2" level="project" />
-    <orderEntry type="library" name="Maven: commons-pool:commons-pool:1.5.6" level="project" />
   </component>
 </module>

@@ -35,8 +35,8 @@ import org.trueno.elasticsearch.spark.connector.Vertex;
 public class ScrollTest {
 
     private static String hostname = "localhost";
-    private static String index = "test_scroll";
-    private static String indexType = "test_type";
+    private static String index = "biogrid";
+    private static String indexType = "e";
     private static Integer indexSize = 6000;
 
     public ScrollTest(){
@@ -75,7 +75,7 @@ public class ScrollTest {
         ElasticClient client;
 
         /* Instantiate the ElasticSearch client and connect to Server */
-        client = new ElasticClient("trueno", hostname);
+        client = new ElasticClient("trueno", hostname, 9300);
         client.connect();
 
         double avg=0.0;
