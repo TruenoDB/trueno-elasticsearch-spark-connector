@@ -39,7 +39,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import scala.collection.mutable.Map;
 import scala.collection.mutable.HashMap;
-
+import scala.collection.mutable.ArrayBuffer;
 
 public class ElasticClient {
 
@@ -57,15 +57,20 @@ public class ElasticClient {
 
     /**
      * Constructor
-     * @param clusterName -> String
-     * @param addresses -> String
+     * @param pstrClusterName -> String
+     * @param pstrAddresses -> String
      */
-    public ElasticClient(String clusterName, String addresses, Integer pintTransportPort) {
-        /* set cluster name and addresses */
-        this.clusterName = clusterName;
-        this.addresses = addresses.split(",");
+    public ElasticClient(String pstrClusterName, String pstrAddresses, Integer pintTransportPort) {
+
+        /* Set cluster name */
+        clusterName = pstrClusterName;
+
+        /* Set IP Addresses */
+        addresses = pstrAddresses.split(",");
+
+        /* Set Port */
         intTransportPort = pintTransportPort;
-    }
+    }//Constructor
 
     /**
      * Connect to elasticsearch using transport client
@@ -186,23 +191,13 @@ public class ElasticClient {
 
         TimeValue tvScrollTime  = new TimeValue(this.scrollTimeOut);
 
-        boolean boolJustOnce = true;
-        Integer intCount = 0;
-
         /* collect results in array */
         ArrayList<Map<String,Long>> sparkSources = new ArrayList<>();
-
-        ArrayList<Map<String,Object>> sources = new ArrayList<>();
-
-        // .setFetchSource(new String[]{strFields}, null)
-        System.out.println("Index " + data.getIndex());
 
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.size(Integer.MAX_VALUE);
         searchSourceBuilder.query(QueryBuilders.matchAllQuery());
         searchSourceBuilder.slice(new SliceBuilder(id, max));
-
-        //.setFetchSource(new String[]{strId}, null)
 
         SearchResponse scrollResp = client.prepareSearch(data.getIndex())
                                     .setSource(searchSourceBuilder)
@@ -215,14 +210,7 @@ public class ElasticClient {
 
             for (SearchHit hit : scrollResp.getHits().getHits()) {
 
-                intCount++;
                 //hit returned
-//                if (boolJustOnce) {
-//                    boolJustOnce = false;
-//                    System.out.println(hit.getSource());
-//                }
-
-                //sources.add(ImmutableMap.of(strSource,hit.getSource()));
 
                 Long lngId = getFromSource(hit.getSource(), strId);
                 if (lngId != null) {
@@ -237,7 +225,7 @@ public class ElasticClient {
 
             //Break condition: No hits are returned
             if (scrollResp.getHits().getHits().length == 0) {
-                //System.out.println("Results count " + intCount);
+
                 return sparkSources;//.toArray(new Map[sparkSources.size()]);
             }
 
@@ -256,8 +244,6 @@ public class ElasticClient {
     public ArrayList<Map<Long,Long>> scrollEdge(SearchObject data, Integer id, Integer max) {
 
         TimeValue tvScrollTime  = new TimeValue(this.scrollTimeOut);
-
-        boolean boolJustOnce = true;
 
         /* collect results in array */
         ArrayList<Map<Long,Long>> sparkSources = new ArrayList<>();
@@ -279,10 +265,6 @@ public class ElasticClient {
             for (SearchHit hit : scrollResp.getHits().getHits()) {
 
                 //hit returned
-//                if(boolJustOnce) {
-//                    boolJustOnce = false;
-//                    System.out.println(hit.getSource());
-//                }
 
                 Long lngSource = getFromSource(hit.getSource(), strEdgeSource);
                 Long lngTarget = getFromSource(hit.getSource(), strEdgeTarget);

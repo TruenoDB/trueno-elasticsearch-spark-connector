@@ -39,10 +39,6 @@ public class ScrollTest {
     private static String indexType = "e";
     private static Integer indexSize = 6000;
 
-    public ScrollTest(){
-
-    }
-
     /* doTest */
     private static double doTest(ElasticClient client) {
         QueryBuilder qbMatchAll = matchAllQuery();
