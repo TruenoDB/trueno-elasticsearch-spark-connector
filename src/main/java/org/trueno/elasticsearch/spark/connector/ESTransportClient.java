@@ -114,6 +114,30 @@ public class ESTransportClient{
 
 
     /**
+     * Get Vertices from index using scrolling
+     * @param id -> identifier of the slice to be read
+     * @param max -> maximum number of slices in the scroll call
+     * @return ArrayList of Vertices
+     */
+    public ArrayList<Long> getLongVertexRDD(Integer id, Integer max) {
+
+        QueryBuilder qbMatchAll = matchAllQuery();
+
+        /* Prepare search object */
+        SearchObject objSearch = new SearchObject();
+                                    objSearch.setIndex(index);
+                                    objSearch.setType(indexTypeVertex);
+                                    objSearch.setSize(indexSize);
+                                    objSearch.setQuery(qbMatchAll.toString());
+
+        /* Get results */
+        ArrayList<Long> results = client.scrollVertexLong(objSearch,id,max);
+
+        return  results;
+
+    }//getLongVertexRDD
+
+    /**
      * Get Edges from index using scrolling
      * @param id -> identifier of the slice to be read
      * @param max -> maximum number of slices in the scroll call

@@ -233,6 +233,60 @@ public class ElasticClient {
 
     }//scrollVertex
 
+
+    /**
+     * The Scroll API allows you to execute a search query and get back search hits that match the query.
+     * The query can either be provided using a simple query string as a parameter, or using a request body
+     * @param data -> SearchObject
+     * @param id -> identifier of the slice to be read
+     * @param max -> maximum number of slices in the scroll call
+     * @return results -> ArrayList
+     */
+    public ArrayList<Long> scrollVertexLong(SearchObject data, Integer id, Integer max) {
+
+        TimeValue tvScrollTime  = new TimeValue(this.scrollTimeOut);
+
+        /* collect results in array */
+        ArrayList<Long> sparkSources = new ArrayList<>();
+
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.size(Integer.MAX_VALUE);
+        searchSourceBuilder.query(QueryBuilders.matchAllQuery());
+        searchSourceBuilder.slice(new SliceBuilder(id, max));
+
+        SearchResponse scrollResp = client.prepareSearch(data.getIndex())
+                .setSource(searchSourceBuilder)
+                .setTypes(data.getType())
+                .setScroll(tvScrollTime)
+                .setSize(hitsPerShard).execute().actionGet(); //n hits per shard will be returned for each scroll
+
+        // Scroll until no hits are returned
+        while (true) {
+
+            for (SearchHit hit : scrollResp.getHits().getHits()) {
+
+                //hit returned
+
+                Long lngId = getFromSource(hit.getSource(), strId);
+
+                if (lngId != null) {
+                    sparkSources.add(lngId);
+                }
+
+            }//for
+
+            scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(tvScrollTime).execute().actionGet();
+
+            //Break condition: No hits are returned
+            if (scrollResp.getHits().getHits().length == 0) {
+
+                return sparkSources;
+            }
+
+        }//while
+
+    }//scrollVertexLong
+
     /**
      * The Scroll API allows you to execute a search query and get back search hits that match the query.
      * The query can either be provided using a simple query string as a parameter, or using a request body
