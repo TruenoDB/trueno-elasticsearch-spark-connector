@@ -1,5 +1,48 @@
 # Trueno's ElasticSearch Spark Connector Development Guide
 
+### Using ElasticSearch REST connector
+
+```scala
+    val conf = new SparkConf().setAppName("AlgorithmsESRestConnector").setMaster("local[*]")
+                    conf.set("es.index.auto.create", "true")
+                    conf.set("es.nodes", strHostname)
+                    conf.set("es.port", strPort)
+                    conf.set("es.http.timeout","10m")
+                    conf.set("es.scroll.size","5000")
+                    conf.set("es.nodes.wan.only","true")
+
+    val sc = new SparkContext(conf)
+
+   
+    /* Reading Vertices from Trueno */
+    val verticesESRDD = sc.esRDD(index+"/v")
+    val totalVertices = verticesESRDD.count()
+
+   /* Creating VertexRDD */
+    val vertexRDD: RDD[(VertexId,Any)] = verticesESRDD.map(
+      x=> (
+        x._2.get("id").get.asInstanceOf[Long],
+        x._2.get("id").get.asInstanceOf[Long]
+      )
+    )
+
+    val vertexSet = VertexRDD(vertexRDD)
+
+    /* Reading Edges from Trueno */
+    val edgesESRDD = sc.esRDD(index+"/e")
+    val totalEdges = edgesESRDD.count()
+
+    val edgesRDD: RDD[Edge[Long]] = edgesESRDD.map(
+      x=> Edge(
+        x._2.get("source").get.asInstanceOf[Long],
+        x._2.get("target").get.asInstanceOf[Long]
+      )
+    )
+
+     val graph = Graph(vertexSet, edgesRDD)
+    graph.vertices.count
+
+```
 
 ### Including connector dependency
 ```scala
@@ -97,7 +140,7 @@ val edgeRDD: RDD[Edge[Long]] = esRDD.flatMap( x=> ( x.map (y => ( Edge(y._1, y._
 ```
 
 
-### Merge two graphs
+### Merge two graphs [1]
 
 Merge treats equally named vertices from the two graphs as the same vertex and merging the adjacent edges.
 
@@ -194,4 +237,4 @@ build/mvn -DskipTests clean package
 
 ### Books
 * Data Algorithms: Recipes for Scaling Up with Hadoop and Spark
-* GraphX in Action
+* [1] Malak, M., & East, R. (2016). Spark GraphX in Action. Manning.
