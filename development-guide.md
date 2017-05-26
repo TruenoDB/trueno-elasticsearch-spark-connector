@@ -1,12 +1,57 @@
 # Trueno's ElasticSearch Spark Connector Development Guide
 
+### Using ElasticSearch REST connector
 
-### Including connector dependency
+```scala
+    val conf = new SparkConf().setAppName("AlgorithmsESRestConnector").setMaster("local[*]")
+                    conf.set("es.index.auto.create", "true")
+                    conf.set("es.nodes", strHostname)
+                    conf.set("es.port", strPort)
+                    conf.set("es.http.timeout","10m")
+                    conf.set("es.scroll.size","5000")
+                    conf.set("es.nodes.wan.only","true")
+
+    val sc = new SparkContext(conf)
+
+   
+    /* Reading Vertices from Trueno */
+    val verticesESRDD = sc.esRDD(index+"/v")
+    val totalVertices = verticesESRDD.count()
+
+   /* Creating VertexRDD */
+    val vertexRDD: RDD[(VertexId,Any)] = verticesESRDD.map(
+      x=> (
+        x._2.get("id").get.asInstanceOf[Long],
+        x._2.get("id").get.asInstanceOf[Long]
+      )
+    )
+
+    val vertexSet = VertexRDD(vertexRDD)
+
+    /* Reading Edges from Trueno */
+    val edgesESRDD = sc.esRDD(index+"/e")
+    val totalEdges = edgesESRDD.count()
+
+    val edgesRDD: RDD[Edge[Long]] = edgesESRDD.map(
+      x=> Edge(
+        x._2.get("source").get.asInstanceOf[Long],
+        x._2.get("target").get.asInstanceOf[Long]
+      )
+    )
+
+     val graph = Graph(vertexSet, edgesRDD)
+    graph.vertices.count
+
+```
+
+### Using Trueno's Spark Connector
+
+#### Including connector dependency
 ```scala
 import trueno.elasticsearch.spark.connector._
 ```
 
-### Spark dependencies
+#### Spark dependencies
 ```scala
 import org.apache.spark.SparkContext    
 import org.apache.spark.SparkContext._
@@ -16,7 +61,7 @@ import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.api.java.JavaSparkContext
 ```
 
-### GraphX Dependencies
+#### GraphX Dependencies
 ```scala
 /* GraphX references */
 import org.apache.spark.graphx._
@@ -26,7 +71,7 @@ import org.apache.spark.graphx.EdgeRDD
 import org.apache.spark.rdd.RDD
 ```
 
-### Scala and Java collections
+#### Scala and Java collections
 ```scala
 import java.util.{Map => JMap}
 
@@ -36,14 +81,14 @@ import scala.collection.JavaConversions._
 import scala.collection.immutable.HashMap
 ```
 
-### Instantiating Trueno's ElasticSearch and Spark connector
+#### Instantiating Trueno's ElasticSearch and Spark connector
 ```scala
 val tc = new ESTransportClient(index, sc)
 ```
 * **index** refers to the ElasticSearch Index. The cluster is set by default to *localhost*.
 * **sc** SparkContext
 
-### Retrieving Vertices from the ElasticSearch Cluster
+#### Retrieving Vertices from the ElasticSearch Cluster
 ```scala
 val verticesESJavaRDD = tc.getLongVertexRDD()
 ```
@@ -57,7 +102,7 @@ val verticesESJavaRDD = tc.getLongVertexRDD()
      verticesESJavaRDD: org.apache.spark.api.java.JavaRDD[Long] = ParallelCollectionRDD[3] at parallelize at ESTransportClient.java:201
   ```
 
-### Converting JavaRDD[Long] to RDD[Long]
+#### Converting JavaRDD[Long] to RDD[Long]
 ```scala
 val verticesESRDD = verticesESJavaRDD.rdd
 ```
@@ -69,12 +114,12 @@ val verticesESRDD = verticesESJavaRDD.rdd
     verticesESRDD: org.apache.spark.rdd.RDD[Long] = ParallelCollectionRDD[3] at parallelize at ESTransportClient.java
     ```
 
-### Retrieving Edges from ElasticSearch Cluster
+#### Retrieving Edges from ElasticSearch Cluster
 ```scala
 val edgeJavaRDD = tc.getEdgeRDDHashMap()
 ```
 
-### Converting JavaRDD to RDD
+#### Converting JavaRDD to RDD
 ```scala
 val esRDD = edgeJavaRDD.rdd
 ```
@@ -85,7 +130,7 @@ val esRDD = edgeJavaRDD.rdd
        esRDD: org.apache.spark.rdd.RDD[scala.collection.mutable.Map[Long,Long]] = ParallelCollectionRDD[1] at parallelize at ESTransportClient.java:375
     ```
 
-### Generating EdgeRDD from the retrieved ElasticSearch RDD
+#### Generating EdgeRDD from the retrieved ElasticSearch RDD
 ```scala
 val edgeRDD: RDD[Edge[Long]] = esRDD.flatMap( x=> ( x.map (y => ( Edge(y._1, y._2, 1.toLong) ) ) ) )
 ```
@@ -97,12 +142,12 @@ val edgeRDD: RDD[Edge[Long]] = esRDD.flatMap( x=> ( x.map (y => ( Edge(y._1, y._
 ```
 
 
-### Merge two graphs
+#### Merge two graphs
 
 Merge treats equally named vertices from the two graphs as the same vertex and merging the adjacent edges.
 
 
-#### Merge two graphs
+##### Merge two graphs
 
 ```scala
 import org.apache.spark.graphx._
@@ -126,7 +171,7 @@ def mergeGraphs(graph1:Graph[String, String], graph2:Graph[String,String]) = {
 
 ```
 
-#### Algorithm
+#### Algorithm [1]
 It constructs a common vertex dictionary in **v**. It generates an RDD of vertex attributes for the first input graph **graph1**. Then, the second graph (**graph2**).
 The two graphs (RDDs) are concatenated with **union**. The unique set (RDD) is taken using **distinct**. Finally, new IDs for each vertex are generated.  
 
@@ -194,4 +239,4 @@ build/mvn -DskipTests clean package
 
 ### Books
 * Data Algorithms: Recipes for Scaling Up with Hadoop and Spark
-* GraphX in Action
+* [1] Malak, M., & East, R. (2016). Spark GraphX in Action. Manning.
